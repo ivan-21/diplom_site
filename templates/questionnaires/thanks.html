@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Готово{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/">Опросники</a><span class="sep">/</span>
+    <span>Готово</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Готово!</h1>
+        <div class="card-sub">Рекомендации/результат обработки будут доступны менеджеру (и/или отправлены по почте)</div>
+      </div>
+      <div class="stepper">
+        <div class="step"><span class="num">01</span> Выбор опросника</div>
+        <div class="step"><span class="num">02</span> Заполнение</div>
+        <div class="step active"><span class="num">03</span> Готово</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <p><b>Номер заявки:</b> {{ submission.id }}</p>
+      <p><b>Статус:</b> {{ submission.status }}</p>
+
+      <div class="actions" style="justify-content:flex-start">
+        <a class="btn primary" href="/q/">Заполнить другую заявку</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

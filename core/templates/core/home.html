@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Опросники</title>
+</head>
+<body>
+  <h1>Опросники</h1>
+
+  {% if user.is_authenticated %}
+    <p>Вы вошли как <b>{{ user.username }}</b></p>
+    <p>
+      <a href="/accounts/logout/">Выйти</a>
+    </p>
+  {% else %}
+    <p>
+      <a href="/accounts/login/">Войти</a>
+    </p>
+  {% endif %}
+
+  <hr>
+
+  <h2>Доступные опросники</h2>
+  <ul>
+    <li><a href="/q/1/">Опросник №1</a></li>
+  </ul>
+</body>
+</html>

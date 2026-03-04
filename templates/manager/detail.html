@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Заявка #{{ sub.id }}{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/manager/submissions/">Менеджер</a><span class="sep">/</span>
+    <span>Заявка #{{ sub.id }}</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+  .badge::before { content:''; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .badge-submitted  { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
+  .badge-submitted::before  { background:#3b82f6; }
+  .badge-in_review  { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+  .badge-in_review::before  { background:#f59e0b; }
+  .badge-processed  { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+  .badge-processed::before  { background:#22c55e; }
+  .badge-rejected   { background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
+  .badge-rejected::before   { background:#f43f5e; }
+
+  .step { opacity:.4; }
+  .step.done { opacity:1; border-color:rgba(34,197,94,.35) !important; background:rgba(34,197,94,.05) !important; }
+  .step.done .num { background:#22c55e !important; color:#fff !important; }
+  .step.active { opacity:1; }
+  .step.rejected-step { opacity:1; border-color:rgba(244,63,94,.35) !important; background:rgba(244,63,94,.05) !important; }
+  .step.rejected-step .num { background:#f43f5e !important; color:#fff !important; }
+
+  .meta-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .meta-item { padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; flex:1; min-width:140px; }
+  .meta-item .label { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .meta-item .value { font-size:14px; font-weight:700; margin-top:4px; }
+
+  table { width:100%; border-collapse:collapse; }
+  thead tr { border-bottom:2px solid var(--line); }
+  thead th { text-align:left; padding:8px 10px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  tbody tr { border-bottom:1px solid var(--line); }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--bg); }
+  tbody td { padding:11px 10px; font-size:14px; }
+
+  .status-actions { display:flex; gap:8px; flex-wrap:wrap; padding:14px 16px; border-top:1px solid var(--line); background:var(--bg); align-items:center; }
+  .status-actions .sa-label { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-right:4px; }
+  .status-btn { padding:9px 14px; border-radius:12px; font-size:13px; font-weight:800; cursor:pointer; transition:all .12s; }
+  .status-btn-review  { border:1px solid #fde68a; background:#fffbeb; color:#92400e; }
+  .status-btn-process { border:1px solid #bbf7d0; background:#f0fdf4; color:#166534; }
+  .status-btn-reject  { border:1px solid #fecdd3; background:#fff1f2; color:#be123c; }
+  .status-btn.current { opacity:.35; cursor:default; pointer-events:none; }
+</style>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 class="card-title">Заявка #{{ sub.id }}</h1>
+      <div class="card-sub">{{ sub.questionnaire.title }} · {{ sub.user.username }}</div>
+    </div>
+    <div class="stepper">
+      {% if sub.status == 'rejected' %}
+        <div class="step done"><span class="num">✓</span> Получено</div>
+        <div class="step rejected-step"><span class="num">✕</span> Отклонено</div>
+      {% elif sub.status == 'submitted' %}
+        <div class="step active"><span class="num">01</span> Получено</div>
+        <div class="step"><span class="num">02</span> Проверка</div>
+        <div class="step"><span class="num">03</span> Обработка</div>
+      {% elif sub.status == 'in_review' %}
+        <div class="step done"><span class="num">✓</span> Получено</div>
+        <div class="step active"><span class="num">02</span> Проверка</div>
+        <div class="step"><span class="num">03</span> Обработка</div>
+      {% elif sub.status == 'processed' %}
+        <div class="step done"><span class="num">✓</span> Получено</div>
+        <div class="step done"><span class="num">✓</span> Проверка</div>
+        <div class="step active"><span class="num">03</span> Обработка</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="meta-row">
+      <div class="meta-item">
+        <div class="label">Статус</div>
+        <div class="value">
+          {% if sub.status == 'submitted' %}<span class="badge badge-submitted">Отправлено</span>
+          {% elif sub.status == 'in_review' %}<span class="badge badge-in_review">На проверке</span>
+          {% elif sub.status == 'processed' %}<span class="badge badge-processed">Обработано</span>
+          {% elif sub.status == 'rejected' %}<span class="badge badge-rejected">Отклонено</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Клиент</div>
+        <div class="value">{{ sub.user.username }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Создано</div>
+        <div class="value">{{ sub.created_at|date:"d.m.Y H:i" }}</div>
+      </div>
+      {% if sub.submitted_at %}
+      <div class="meta-item">
+        <div class="label">Отправлено</div>
+        <div class="value">{{ sub.submitted_at|date:"d.m.Y H:i" }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if sub.processed_data_json %}
+      <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Обработанные данные</h3>
+      <pre style="background:#f3f4f6;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;font-size:13px;margin-bottom:16px;">{{ sub.processed_data_json }}</pre>
+    {% endif %}
+
+    {% if sub.issues_json %}
+      <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Предупреждения</h3>
+      <pre style="background:#fff5f5;border:1px solid rgba(214,31,44,.25);border-radius:12px;padding:12px;overflow:auto;font-size:13px;margin-bottom:16px;">{{ sub.issues_json }}</pre>
+    {% endif %}
+
+    <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px;">Ответы клиента</h3>
+    <table>
+      <thead>
+        <tr><th>Вопрос</th><th>Ответ</th></tr>
+      </thead>
+      <tbody>
+        {% for a in answers %}
+  {% if a.value_text or a.value_number is not None or a.value_bool is not None %}
+  <tr>
+            <td>
+              <b>{{ a.question.label }}</b>
+              <div class="help">
+                {% if a.question.manager_label %}
+                {{ a.question.manager_label }}
+                {% else %}
+                {{ a.question.slug }}
+          {% endif %}
+              </div>
+            </td>
+            <td>
+  {% if a.value_number is not None %}
+    {{ a.value_number }}
+  {% elif a.value_bool is not None %}
+    {% if a.value_bool %}Да{% else %}Нет{% endif %}
+  {% else %}
+    {% if a.question.field_type == 'select' %}
+      {% with opt=a.question.options.all %}
+        {% for o in opt %}
+          {% if o.value == a.value_text %}{{ o.label }}{% endif %}
+        {% endfor %}
+      {% endwith %}
+    {% else %}
+      {{ a.value_text|default:"—" }}
+    {% endif %}
+  {% endif %}
+</td>
+          </tr>
+          {% endif %}
+        {% empty %}
+          <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:24px;">Нет ответов</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <a class="btn ghost" href="/q/manager/submissions/">← Назад к списку</a>
+    </div>
+  </div>
+
+  <div class="status-actions">
+    <span class="sa-label">Изменить статус:</span>
+    <form method="post" action="{% url 'manager_set_status' submission_id=sub.id %}" style="display:contents;">
+      {% csrf_token %}
+      <button type="submit" name="status" value="in_review"
+        class="status-btn status-btn-review {% if sub.status == 'in_review' %}current{% endif %}">
+        🔍 На проверку
+      </button>
+      <button type="submit" name="status" value="processed"
+        class="status-btn status-btn-process {% if sub.status == 'processed' %}current{% endif %}">
+        ✅ Обработано
+      </button>
+      <button type="submit" name="status" value="rejected"
+        class="status-btn status-btn-reject {% if sub.status == 'rejected' %}current{% endif %}">
+        ✕ Отклонить
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

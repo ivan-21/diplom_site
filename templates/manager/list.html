@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Заявки (менеджер){% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <span>Менеджер</span><span class="sep">/</span>
+    <span>Заявки</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+  .badge::before { content:''; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .badge-submitted  { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
+  .badge-submitted::before  { background:#3b82f6; }
+  .badge-in_review  { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+  .badge-in_review::before  { background:#f59e0b; }
+  .badge-processed  { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+  .badge-processed::before  { background:#22c55e; }
+  .badge-rejected   { background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
+  .badge-rejected::before   { background:#f43f5e; }
+
+  .stat-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat { flex:1; min-width:110px; padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; }
+  .stat-num { font-size:24px; font-weight:900; line-height:1; }
+  .stat-label { font-size:12px; color:var(--muted); font-weight:700; margin-top:4px; }
+
+  table { width:100%; border-collapse:collapse; }
+  thead tr { border-bottom:2px solid var(--line); }
+  thead th { text-align:left; padding:8px 10px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  tbody tr { border-bottom:1px solid var(--line); transition:background .12s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--bg); }
+  tbody td { padding:12px 10px; font-size:14px; }
+
+  .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .filter-btn { padding:7px 14px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12px; font-weight:800; cursor:pointer; color:var(--muted); transition:all .12s; }
+  .filter-btn:hover, .filter-btn.active { border-color:rgba(214,31,44,.4); background:rgba(214,31,44,.06); color:var(--text); }
+
+  .user-chip { display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+  .avatar { width:26px; height:26px; border-radius:50%; background:var(--accent2); color:#fff; font-size:11px; font-weight:900; display:grid; place-items:center; }
+  .empty-state { text-align:center; padding:48px 16px; color:var(--muted); }
+</style>
+
+<div class="card">
+  <div class="card-head">
+    <div>
+      <h1 class="card-title">Заявки</h1>
+      <div class="card-sub">Список отправленных анкет</div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">{{ count_total }}</div>
+        <div class="stat-label">Всего</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#3b82f6">{{ count_submitted }}</div>
+        <div class="stat-label">Отправлено</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#f59e0b">{{ count_in_review }}</div>
+        <div class="stat-label">На проверке</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:#22c55e">{{ count_processed }}</div>
+        <div class="stat-label">Обработано</div>
+      </div>
+    </div>
+
+    <div class="filter-row" id="filterRow">
+      <button class="filter-btn active" data-status="all">Все</button>
+      <button class="filter-btn" data-status="submitted">Отправлено</button>
+      <button class="filter-btn" data-status="in_review">На проверке</button>
+      <button class="filter-btn" data-status="processed">Обработано</button>
+      <button class="filter-btn" data-status="rejected">Отклонено</button>
+    </div>
+
+    <table id="submissionsTable">
+      <thead>
+        <tr>
+          <th>ID</th><th>Клиент</th><th>Опросник</th><th>Дата</th><th>Статус</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in items %}
+          <tr data-status="{{ s.status }}">
+            <td><b>#{{ s.id }}</b></td>
+            <td>
+              <div class="user-chip">
+                <div class="avatar">{{ s.user.username|first|upper }}</div>
+                {{ s.user.username }}
+              </div>
+            </td>
+            <td>{{ s.questionnaire.title }}</td>
+            <td style="color:var(--muted);font-size:13px;">
+              {{ s.created_at|date:"d.m.Y" }}<br>
+              <span style="font-size:11px;">{{ s.created_at|date:"H:i" }}</span>
+            </td>
+            <td>
+              {% if s.status == 'submitted' %}<span class="badge badge-submitted">Отправлено</span>
+              {% elif s.status == 'in_review' %}<span class="badge badge-in_review">На проверке</span>
+              {% elif s.status == 'processed' %}<span class="badge badge-processed">Обработано</span>
+              {% elif s.status == 'rejected' %}<span class="badge badge-rejected">Отклонено</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right;">
+              <a class="btn ghost" href="{% url 'manager_detail' submission_id=s.id %}">Открыть →</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6"><div class="empty-state">📋<br>Пока нет заявок</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.getElementById('filterRow').addEventListener('click', function(e) {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const status = btn.dataset.status;
+    document.querySelectorAll('#submissionsTable tbody tr[data-status]').forEach(row => {
+      row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

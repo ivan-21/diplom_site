@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <span>Вход</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Вход</h1>
+        <div class="card-sub">Введите логин и пароль</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+          {% for field in form %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}</label>
+              {{ field }}
+              {% if field.errors %}<div class="errors">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Войти</button>
+          <a class="btn ghost" href="/accounts/signup/">Регистрация</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Подтверждение{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/">Опросники</a><span class="sep">/</span>
+    <span>Подтверждение</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Подтверждение отправки</h1>
+        <div class="card-sub">Проверьте данные и нажмите “Отправить”</div>
+      </div>
+      <div class="stepper">
+        <div class="step"><span class="num">01</span> Выбор опросника</div>
+        <div class="step"><span class="num">02</span> Заполнение</div>
+        <div class="step active"><span class="num">03</span> Готово</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <p><b>Опросник:</b>
+        {% if questionnaire %}{{ questionnaire.title }}{% else %}{{ submission.questionnaire.title }}{% endif %}
+      </p>
+
+      <form method="post" onsubmit="return document.getElementById('agree').checked;">
+        {% csrf_token %}
+        <div class="actions">
+          <a class="btn ghost" href="/q/">Назад</a>
+          <button class="btn primary" type="submit">Отправить</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

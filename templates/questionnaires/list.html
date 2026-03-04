@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Онлайн-заявка{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <span>Подбор оборудования</span><span class="sep">/</span>
+    <span>Онлайн-заявка</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Онлайн-заявка на подбор оборудования</h1>
+        <div class="card-sub">Выберите опросник и заполните форму</div>
+      </div>
+      <div class="stepper">
+        <div class="step active"><span class="num">01</span> Выбор опросника</div>
+        <div class="step"><span class="num">02</span> Заполнение</div>
+        <div class="step"><span class="num">03</span> Готово</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="grid">
+        {% for q in items %}
+          <div class="card" style="margin-top:0; box-shadow:none;">
+            <div class="card-head">
+              <div>
+                <h2 class="card-title">{{ q.title }}</h2>
+                <div class="card-sub">{{ q.description }}</div>
+              </div>
+              <a class="btn primary" href="{% url 'start_questionnaire' slug=q.slug %}">Заполнить →</a>
+            </div>
+          </div>
+        {% empty %}
+        
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

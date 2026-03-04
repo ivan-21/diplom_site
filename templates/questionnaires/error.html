@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Ошибка{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/">Опросники</a><span class="sep">/</span>
+    <span>Ошибка</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Ошибка</h1>
+        <div class="card-sub">Что-то пошло не так</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p>{{ message }}</p>
+      <div class="actions">
+        <a class="btn primary" href="/q/">К опросникам</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

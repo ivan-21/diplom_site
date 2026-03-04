@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Заполнение{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/">Опросники</a><span class="sep">/</span>
+    <span>{{ questionnaire.title }}</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">{{ questionnaire.title }}</h1>
+        <div class="card-sub">Шаг {{ step.order }}{% if step.title %}: {{ step.title }}{% endif %}</div>
+      </div>
+      <div class="stepper">
+        <div class="step"><span class="num">01</span> Выбор опросника</div>
+        <div class="step active"><span class="num">02</span> Заполнение</div>
+        <div class="step"><span class="num">03</span> Готово</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <form method="post" id="stepForm">
+        {% csrf_token %}
+
+        <div class="form-grid">
+          {% for field in form %}
+            <div class="q-row"
+                 data-field="{{ field.name }}"
+                 data-depends-on="{{ field.field.depends_on|default:'' }}"
+                 data-depends-value="{{ field.field.depends_value|default:'' }}">
+              <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span class="req">*</span>{% endif %}
+              </label>
+              {{ field }}
+              {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="errors">{{ field.errors }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="actions">
+          <a class="btn ghost" href="/q/">Назад</a>
+          <button class="btn primary" type="submit">Сохранить и далее →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {{ draft_answers|json_script:"draftAnswers" }}
+  <script>
+    function applyVisibility() {
+  const previous = JSON.parse(document.getElementById("draftAnswers").textContent || "{}");
+  const rows = document.querySelectorAll(".q-row");
+  const values = { ...previous }; // ← сначала прошлые ответы
+
+  // затем перезапишем тем, что есть на текущем шаге (если есть)
+  rows.forEach(row => {
+    const name = row.dataset.field;
+    const input = row.querySelector("input, select, textarea");
+    if (!input) return;
+
+    let val = "";
+    if (input.type === "checkbox") val = input.checked ? "true" : "false";
+    else val = input.value;
+
+    values[name] = val;
+  });
+
+  // дальше твой код зависимостей как был
+  rows.forEach(row => {
+    const dependsOn = row.dataset.dependsOn;
+    const dependsValue = row.dataset.dependsValue;
+
+    if (!dependsOn) { row.hidden = false; return; }
+
+    const actual = values[dependsOn] ?? "";
+    row.hidden = actual !== dependsValue;
+
+    if (row.hidden) {
+      const input = row.querySelector("input, select, textarea");
+      if (input) {
+        if (input.type === "checkbox") input.checked = false;
+        else input.value = "";
+      }
+    }
+  });
+}
+
+    document.addEventListener("change", (e) => {
+      if (e.target.matches("input, select, textarea")) applyVisibility();
+    });
+
+    applyVisibility();
+  </script>
+
+{% endblock %}

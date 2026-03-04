@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <span>Главная</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Подбор оборудования</h1>
+        <div class="card-sub">Единая система опросников и заявок</div>
+      </div>
+      <div class="stepper">
+        <div class="step active"><span class="num">01</span> Выбор опросника</div>
+        <div class="step"><span class="num">02</span> Заполнение</div>
+        <div class="step"><span class="num">03</span> Готово</div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      {% if user.is_authenticated %}
+        <p>Перейдите к списку опросников и заполните заявку.</p>
+        <div class="actions" style="justify-content:flex-start">
+          <a class="btn primary" href="/q/">Открыть опросники →</a>
+        </div>
+      {% else %}
+        <p>Чтобы заполнить опросник, войдите в аккаунт.</p>
+        <div class="actions" style="justify-content:flex-start">
+          <a class="btn primary" href="/accounts/login/">Войти</a>
+          <a class="btn ghost" href="/accounts/signup/">Регистрация</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
