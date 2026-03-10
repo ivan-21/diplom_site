@@ -10,4 +10,5 @@ urlpatterns = [
     path("manager/submissions/", views.manager_list, name="manager_list"),
     path("manager/submissions/<int:submission_id>/", views.manager_detail, name="manager_detail"),
     path("manager/submissions/<int:submission_id>/set-status/", views.manager_set_status, name="manager_set_status"),
+    path("handbook/", views.handbook, name="handbook"),
 ]

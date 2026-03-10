@@ -189,3 +189,6 @@ def _set_draft(request, slug: str, data: dict) -> None:
 def _clear_draft(request, slug: str) -> None:
     request.session.pop(_draft_key(slug), None)
     request.session.modified = True
+
+def handbook(request):
+    return render(request, "questionnaires/handbook.html")
