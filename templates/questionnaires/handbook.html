@@ -680,6 +680,25 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
 </style>
 </head>
 <body>
+  <button onclick="history.back()" style="
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+  background: #1a1410;
+  color: #f5f0e8;
+  border: 1px solid #444;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+" onmouseover="this.style.borderColor='#c4420a';this.style.color='#c4420a'" 
+   onmouseout="this.style.borderColor='#444';this.style.color='#f5f0e8'">
+  ← НАЗАД
+</button>
 
 <header class="site-header">
   <div class="header-inner">
@@ -1284,6 +1303,10 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         <div class="section-tag">Глава 2 · Раздел 2.1</div>
         <div class="section-title">Выбор типа насоса</div>
         <div class="section-desc">Диаметр НКТ определяет допустимые типы и размеры насосов. Два основных типа по API: трубный (T) и вставной (R).</div>
+      </div>
+            <div class="info-block gold">
+        В настоящее время заводом изготавливаются
+наиболее широко применяемые типы насосов, это - <strong>RHA, RHB, RHT, TH</strong> с внутренним диаметром от 27,0 до 69,9 мм (от 20-106 до 30-275 включительно).
       </div>
 
       <div class="sub-title">Таблица 9 — Выбор по диаметру НКТ</div>

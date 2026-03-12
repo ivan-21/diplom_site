@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django import forms
 from django.db import transaction
-
+from .services import get_pump_recommendation, get_plunger_recommendation, get_material_recommendation
 from .models import Questionnaire, QuestionnaireStep, Question, Submission, Answer
 
 
@@ -25,7 +25,6 @@ def build_step_form(step: QuestionnaireStep, draft_answers: dict):
             choices = [(opt.value, opt.label) for opt in q.options.all()]
             fields[q.slug] = forms.ChoiceField(choices=[("", "— выберите —")] + choices, **common)
 
-        # если у тебя есть ветвление:
         fields[q.slug].depends_on = q.depends_on.slug if getattr(q, "depends_on", None) else ""
         fields[q.slug].depends_value = q.depends_value if getattr(q, "depends_value", "") else ""
 
@@ -134,7 +133,6 @@ def submit_questionnaire(request, slug):
 
                 ans.save()
 
-                ans.save()
 
         _clear_draft(request, slug)
 
@@ -174,7 +172,28 @@ def manager_set_status(request, submission_id):
 def manager_detail(request, submission_id):
     sub = get_object_or_404(Submission, id=submission_id)
     answers = sub.answers.select_related("question").prefetch_related("question__options").all()
-    return render(request, "manager/detail.html", {"sub": sub, "answers": answers})
+
+    # Собираем словарь slug -> value
+    answers_dict = {}
+    for a in answers:
+        if a.value_number is not None:
+            answers_dict[a.question.slug] = str(a.value_number)
+        elif a.value_bool is not None:
+            answers_dict[a.question.slug] = a.value_bool
+        else:
+            answers_dict[a.question.slug] = a.value_text
+
+    recommendation = get_pump_recommendation(answers_dict)
+    plunger_rec     = get_plunger_recommendation(answers_dict)
+    material_rec     = get_material_recommendation(answers_dict)
+
+    return render(request, "manager/detail.html", {
+        "sub": sub,
+        "answers": answers,
+        "recommendation": recommendation,
+        "plunger_rec":    plunger_rec,
+        "material_rec":   material_rec,
+    })
 
 def _draft_key(slug: str) -> str:
     return f"draft_q_{slug}"

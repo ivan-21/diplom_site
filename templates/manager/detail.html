@@ -104,6 +104,327 @@
       </div>
       {% endif %}
     </div>
+      {% if recommendation and recommendation.has_data %}
+<style>
+  .rec2-block { border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
+  .rec2-head { padding:12px 18px; background:var(--accent2); color:#fff; display:flex; align-items:center; gap:10px; }
+  .rec2-head-title { font-size:14px; font-weight:900; }
+  .rec2-body { padding:16px; background:#fff; }
+
+  .pump-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+  .pump-card { border:1px solid var(--line); border-radius:12px; padding:16px; position:relative; background:var(--bg); }
+  .pump-card.recommended { border-color:rgba(34,197,94,.5); background:rgba(34,197,94,.03); }
+  .pump-card.acceptable  { border-color:rgba(234,179,8,.5);  background:rgba(234,179,8,.03); }
+  .pump-card.not_recommended { border-color:var(--line); opacity:.55; }
+
+  .pump-verdict {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:10px; font-weight:800; letter-spacing:.5px;
+    text-transform:uppercase; padding:3px 8px;
+    border-radius:999px; margin-bottom:10px;
+  }
+  .pump-verdict.recommended { background:rgba(34,197,94,.12); color:#166534; }
+  .pump-verdict.acceptable  { background:rgba(234,179,8,.12);  color:#92400e; }
+  .pump-verdict.not_recommended { background:#f3f4f6; color:var(--muted); }
+
+  .pump-code { font-size:20px; font-weight:900; margin-bottom:2px; }
+  .pump-name { font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
+
+  .score-bar { height:3px; background:var(--line); border-radius:2px; margin-bottom:12px; overflow:hidden; }
+  .score-bar-fill { height:100%; border-radius:2px; }
+  .recommended .score-bar-fill { background:#22c55e; }
+  .acceptable  .score-bar-fill { background:#eab308; }
+  .not_recommended .score-bar-fill { background:#d1d5db; }
+
+  .pump-reasons { list-style:none; padding:0; margin:0; }
+  .pump-reasons li { font-size:11px; color:var(--muted); padding:3px 0; display:flex; gap:6px; line-height:1.4; border-bottom:1px solid var(--line); }
+  .pump-reasons li:last-child { border-bottom:none; }
+  .pump-reasons li.good { color:#166534; }
+  .pump-reasons li.good::before { content:'✓'; color:#22c55e; flex-shrink:0; }
+  .pump-reasons li.bad  { color:#be123c; }
+  .pump-reasons li.bad::before  { content:'✗'; color:#f43f5e; flex-shrink:0; }
+  .pump-reasons li:not(.good):not(.bad)::before { content:'›'; color:var(--muted); flex-shrink:0; }
+
+  .rec2-log { margin-top:12px; padding:12px 14px; background:var(--bg); border:1px solid var(--line); border-radius:10px; font-size:11px; color:var(--muted); line-height:2; }
+  .rec2-log-title { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+</style>
+
+<div class="rec2-block">
+  <div class="rec2-head">
+    <div class="rec2-head-title">
+      Рекомендация по подбору насоса
+      {% if recommendation.best %}
+        — {{ recommendation.best.code }}: {{ recommendation.best.name }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="rec2-body">
+{% if recommendation.nkt_sizes %}
+<div style="margin-bottom:16px;">
+  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+    Доступные размеры насосов — НКТ {{ recommendation.nkt_diameter }} мм
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+    <div style="flex:1;min-width:180px;padding:14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;">
+      <div style="font-size:11px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+        Вставной (RH)
+      </div>
+      {% for size in recommendation.nkt_sizes.RH %}
+        <span style="display:inline-flex;padding:5px 10px;border-radius:8px;border:1px solid #bfdbfe;background:#fff;font-size:13px;font-weight:800;margin:2px;">
+          {{ size }}
+        </span>
+      {% endfor %}
+    </div>
+    
+
+    <div style="flex:1;min-width:180px;padding:14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;">
+      <div style="font-size:11px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+        Трубный (ТН)
+      </div>
+      {% for size in recommendation.nkt_sizes.TH %}
+        <span style="display:inline-flex;padding:5px 10px;border-radius:8px;border:1px solid #bbf7d0;background:#fff;font-size:13px;font-weight:800;margin:2px;">
+          {{ size }}
+        </span>
+      {% endfor %}
+    </div>
+
+    {% if recommendation.manjetnoe %}
+  {% with best=recommendation.best %}
+    {% if best.code == 'RHA' or best.code == 'RHB' %}
+    <div style="margin-top:14px; padding:14px 16px; border-radius:12px;
+                border:1px solid #fde68a; background:#fffbeb;
+                display:flex; gap:12px; align-items:flex-start;">
+      <span style="font-size:18px; flex-shrink:0;">⚠</span>
+      <div>
+        <div style="font-size:12px; font-weight:800; color:#92400e;
+                    text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">
+          Рекомендуется манжетное крепление
+        </div>
+        <div style="font-size:13px; color:#92400e; line-height:1.6;">
+          Для насоса {{ best.code }} в данных условиях рекомендуется
+          использовать манжетное крепление вместо механического.
+        </div>
+        <ul style="margin-top:8px; padding-left:16px; font-size:12px; color:#92400e;">
+          {% for reason in recommendation.manjetnoe_reasons %}
+            <li>{{ reason }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  {% endwith %}
+{% endif %}
+
+  </div>
+</div>
+{% endif %}
+    <div class="pump-cards">
+      {% for pump in recommendation.pumps %}
+      <div class="pump-card {{ pump.verdict }}">
+        <div class="pump-verdict {{ pump.verdict }}">
+          {% if pump.verdict == 'recommended' %}✓ Рекомендован
+          {% elif pump.verdict == 'acceptable' %}~ Допустим
+          {% else %}✗ Не рекомендован{% endif %}
+        </div>
+        <div class="pump-code">{{ pump.code }}</div>
+        <div class="pump-name">{{ pump.name }}</div>
+        <div class="score-bar">
+          <div class="score-bar-fill" style="width:{{ pump.pct }}%"></div>
+        </div>
+        <ul class="pump-reasons">
+          {% for r in pump.reasons %}
+            <li class="{% if r.good %}good{% elif r.bad %}bad{% endif %}">{{ r.text }}</li>
+          {% empty %}
+            <li>Нет специфических условий</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if recommendation.log %}
+    <div class="rec2-log-title">Дерево решений</div>
+    <div class="rec2-log">
+      {% for line in recommendation.log %}
+        {{ line }}<br>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% if plunger_rec and plunger_rec.has_data %}
+<div class="rec2-block" style="margin-bottom:20px;">
+  <div class="rec2-head">
+    <div class="rec2-head-title">Подбор плунжера и размеров насоса</div>
+  </div>
+  <div class="rec2-body">
+
+    <div class="meta-row">
+
+      <div class="meta-item">
+        <div class="label">Длина плунжера</div>
+        <div class="value">{{ plunger_rec.plunger_feet }} фута — {{ plunger_rec.plunger_mm }} мм</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ plunger_rec.plunger_note }}</div>
+      </div>
+
+      {% if plunger_rec.nkt_sizes %}
+      <div class="meta-item" style="flex:2;">
+        <div class="label">Допустимые размеры насосов — НКТ {{ plunger_rec.nkt_diameter }} мм</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+
+          <div style="flex:1;min-width:160px;padding:10px 12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;">
+            <div style="font-size:10px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+              Вставной (RH)
+            </div>
+            {% for size in plunger_rec.nkt_sizes.RH %}
+              <span style="display:inline-flex;padding:4px 10px;border-radius:8px;border:1px solid #bfdbfe;background:#fff;font-size:13px;font-weight:800;margin:2px;">
+                {{ size }}
+              </span>
+            {% endfor %}
+          </div>
+
+          <div style="flex:1;min-width:160px;padding:10px 12px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;">
+            <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+              Трубный (ТН)
+            </div>
+            {% for size in plunger_rec.nkt_sizes.TH %}
+              <span style="display:inline-flex;padding:4px 10px;border-radius:8px;border:1px solid #bbf7d0;background:#fff;font-size:13px;font-weight:800;margin:2px;">
+                {{ size }}
+              </span>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% if material_rec and material_rec.has_data %}
+<div class="rec2-block" style="margin-bottom:20px;">
+  <div class="rec2-head">
+    <div class="rec2-head-title">Выбор материалов (Таблица 14)</div>
+  </div>
+  <div class="rec2-body">
+    {% if material_rec.summary %}
+<div style="margin-bottom:20px;padding:14px 16px;border-radius:12px;
+            border:2px solid var(--accent2);background:var(--bg);">
+  <div style="font-size:11px;font-weight:800;color:var(--muted);
+              text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+    Итоговая рекомендация по материалам
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                border:1px solid {{ material_rec.summary.cyl.border }};
+                background:{{ material_rec.summary.cyl.bg }};">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        Цилиндр
+      </div>
+      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.cyl.color }};">
+        {{ material_rec.summary.cyl.material }}
+      </div>
+      <div style="font-size:11px;color:{{ material_rec.summary.cyl.color }};margin-top:2px;">
+        {{ material_rec.summary.cyl.text }}
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                border:1px solid {{ material_rec.summary.plu.border }};
+                background:{{ material_rec.summary.plu.bg }};">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        Плунжер
+      </div>
+      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.plu.color }};">
+        {{ material_rec.summary.plu.material }}
+      </div>
+      <div style="font-size:11px;color:{{ material_rec.summary.plu.color }};margin-top:2px;">
+        {{ material_rec.summary.plu.text }}
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                border:1px solid {{ material_rec.summary.val.border }};
+                background:{{ material_rec.summary.val.bg }};">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+        Клапанная пара
+      </div>
+      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.val.color }};">
+        {{ material_rec.summary.val.material }}
+      </div>
+      <div style="font-size:11px;color:{{ material_rec.summary.val.color }};margin-top:2px;">
+        {{ material_rec.summary.val.text }}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+    {% for row in material_rec.rows %}
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+        {{ row.label }}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                    border:1px solid {{ row.cyl_best.border }};background:{{ row.cyl_best.bg }};">
+          <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+            Цилиндр
+          </div>
+          <div style="font-size:13px;font-weight:800;color:{{ row.cyl_best.color }};">
+            {{ row.cyl_best.material }}
+          </div>
+          <div style="font-size:11px;color:{{ row.cyl_best.color }};margin-top:2px;">
+            {{ row.cyl_best.text }}
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                    border:1px solid {{ row.plu_best.border }};background:{{ row.plu_best.bg }};">
+          <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+            Плунжер
+          </div>
+          <div style="font-size:13px;font-weight:800;color:{{ row.plu_best.color }};">
+            {{ row.plu_best.material }}
+          </div>
+          <div style="font-size:11px;color:{{ row.plu_best.color }};margin-top:2px;">
+            {{ row.plu_best.text }}
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
+                    border:1px solid {{ row.val_best.border }};background:{{ row.val_best.bg }};">
+          <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+            Клапанная пара
+          </div>
+          <div style="font-size:13px;font-weight:800;color:{{ row.val_best.color }};">
+            {{ row.val_best.material }}
+          </div>
+          <div style="font-size:11px;color:{{ row.val_best.color }};margin-top:2px;">
+            {{ row.val_best.text }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
     {% if sub.processed_data_json %}
       <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Обработанные данные</h3>
