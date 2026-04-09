@@ -313,115 +313,137 @@
   </div>
   <div class="rec2-body">
     {% if material_rec.summary %}
-<div style="margin-bottom:20px;padding:14px 16px;border-radius:12px;
-            border:2px solid var(--accent2);background:var(--bg);">
-  <div style="font-size:11px;font-weight:800;color:var(--muted);
-              text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
-    Итоговая рекомендация по материалам
-  </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                border:1px solid {{ material_rec.summary.cyl.border }};
-                background:{{ material_rec.summary.cyl.bg }};">
-      <div style="font-size:10px;font-weight:800;color:var(--muted);
-                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-        Цилиндр
-      </div>
-      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.cyl.color }};">
-        {{ material_rec.summary.cyl.material }}
-      </div>
-      <div style="font-size:11px;color:{{ material_rec.summary.cyl.color }};margin-top:2px;">
-        {{ material_rec.summary.cyl.text }}
-      </div>
-    </div>
-
-    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                border:1px solid {{ material_rec.summary.plu.border }};
-                background:{{ material_rec.summary.plu.bg }};">
-      <div style="font-size:10px;font-weight:800;color:var(--muted);
-                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-        Плунжер
-      </div>
-      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.plu.color }};">
-        {{ material_rec.summary.plu.material }}
-      </div>
-      <div style="font-size:11px;color:{{ material_rec.summary.plu.color }};margin-top:2px;">
-        {{ material_rec.summary.plu.text }}
-      </div>
-    </div>
-
-    <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                border:1px solid {{ material_rec.summary.val.border }};
-                background:{{ material_rec.summary.val.bg }};">
-      <div style="font-size:10px;font-weight:800;color:var(--muted);
-                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-        Клапанная пара
-      </div>
-      <div style="font-size:13px;font-weight:800;color:{{ material_rec.summary.val.color }};">
-        {{ material_rec.summary.val.material }}
-      </div>
-      <div style="font-size:11px;color:{{ material_rec.summary.val.color }};margin-top:2px;">
-        {{ material_rec.summary.val.text }}
-      </div>
-    </div>
-
-  </div>
-</div>
-{% endif %}
-    {% for row in material_rec.rows %}
-    <div style="margin-bottom:16px;">
-      <div style="font-size:12px;font-weight:800;color:var(--muted);
-                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-        {{ row.label }}
+    <div style="margin-bottom:20px;padding:14px 16px;border-radius:12px;
+                border:2px solid var(--accent2);background:var(--bg);">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+        Итоговая рекомендация по материалам
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
 
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                    border:1px solid {{ row.cyl_best.border }};background:{{ row.cyl_best.bg }};">
+        <!-- Цилиндр (теперь может быть несколько вариантов) -->
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
             Цилиндр
           </div>
-          <div style="font-size:13px;font-weight:800;color:{{ row.cyl_best.color }};">
-            {{ row.cyl_best.material }}
+          {% for mat in material_rec.summary.cyl %}
+          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                      border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
+              {{ mat.material }}
+            </div>
+            <div style="font-size:11px;color:{{ mat.color }};">
+              {{ mat.text }}
+            </div>
           </div>
-          <div style="font-size:11px;color:{{ row.cyl_best.color }};margin-top:2px;">
-            {{ row.cyl_best.text }}
-          </div>
+          {% empty %}
+          <div style="color:var(--muted);">—</div>
+          {% endfor %}
+          {% if material_rec.summary.cyl|length > 1 %}
+          {% endif %}
         </div>
 
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                    border:1px solid {{ row.plu_best.border }};background:{{ row.plu_best.bg }};">
+        <!-- Плунжер (теперь может быть несколько вариантов) -->
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
             Плунжер
           </div>
-          <div style="font-size:13px;font-weight:800;color:{{ row.plu_best.color }};">
-            {{ row.plu_best.material }}
+          {% for mat in material_rec.summary.plu %}
+          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                      border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
+              {{ mat.material }}
+            </div>
+            <div style="font-size:11px;color:{{ mat.color }};">
+              {{ mat.text }}
+            </div>
           </div>
-          <div style="font-size:11px;color:{{ row.plu_best.color }};margin-top:2px;">
-            {{ row.plu_best.text }}
-          </div>
+          {% empty %}
+          <div style="color:var(--muted);">—</div>
+          {% endfor %}
         </div>
 
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;
-                    border:1px solid {{ row.val_best.border }};background:{{ row.val_best.bg }};">
+        <!-- Клапанная пара (теперь может быть несколько вариантов) -->
+        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
             Клапанная пара
           </div>
-          <div style="font-size:13px;font-weight:800;color:{{ row.val_best.color }};">
-            {{ row.val_best.material }}
+          {% for mat in material_rec.summary.val %}
+          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                      border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
+              {{ mat.material }}
+            </div>
+            <div style="font-size:11px;color:{{ mat.color }};">
+              {{ mat.text }}
+            </div>
           </div>
-          <div style="font-size:11px;color:{{ row.val_best.color }};margin-top:2px;">
-            {{ row.val_best.text }}
-          </div>
+          {% empty %}
+          <div style="color:var(--muted);">—</div>
+          {% endfor %}
         </div>
 
       </div>
     </div>
-    {% endfor %}
+    {% endif %}
+
+    <!-- Детализация по средам (аккордеон) -->
+    <details style="margin-top: 12px;">
+      <summary style="cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">
+        Детализация по типам сред ({{ material_rec.rows|length }})
+      </summary>
+      <div style="margin-top: 16px;">
+        {% for row in material_rec.rows %}
+        <div style="margin-bottom:20px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg);">
+          <div style="font-size:13px;font-weight:800;color:var(--accent2);margin-bottom:12px;">
+            {{ row.label }}
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+            <!-- Цилиндр для этой среды -->
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Цилиндр</div>
+              {% for mat in row.cyl_best %}
+              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+                          border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Плунжер для этой среды -->
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Плунжер</div>
+              {% for mat in row.plu_best %}
+              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+                          border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Клапаны для этой среды -->
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Клапанная пара</div>
+              {% for mat in row.val_best %}
+              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+                          border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+              </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
   </div>
 </div>
 {% endif %}

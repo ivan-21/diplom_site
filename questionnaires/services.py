@@ -294,7 +294,7 @@ def get_material_recommendation(answers_dict):
         else:
             environments.append("non_corr")
 
-    # H2S + CO2 комбо (строки 11-14 таблицы)
+    # H2S + CO2 комбо
     if corr_h2s != 'none' and corr_co2 != 'none':
         both_high = (corr_h2s == 'high' and corr_co2 == 'high') or \
                     (corr_h2s == 'high' and corr_co2 == 'medium') or \
@@ -304,34 +304,32 @@ def get_material_recommendation(answers_dict):
         else:
             environments.append("h2s_co2_mod_abrasive" if abrasive else "h2s_co2_mod")
 
-    # H2S отдельно (строки 3-6)
+    # H2S отдельно
     elif corr_h2s != 'none':
         if corr_h2s == 'high':
             environments.append("h2s_high_abrasive" if abrasive else "h2s_high")
         else:
             environments.append("h2s_mod_abrasive" if abrasive else "h2s_mod")
 
-    # CO2 отдельно (строки 7-10)
+    # CO2 отдельно
     elif corr_co2 != 'none':
         if corr_co2 == 'high':
             environments.append("co2_high_abrasive" if abrasive else "co2_high")
         else:
             environments.append("co2_mod_abrasive" if abrasive else "co2_mod")
 
-    # Солевой раствор (строки 15-18) — независимо от h2s/co2
+    # Солевой раствор
     if corr_saltwater != 'none':
         if corr_saltwater == 'high':
             environments.append("saltwater_high_abrasive" if abrasive else "saltwater_high")
         else:
             environments.append("saltwater_mod_abrasive" if abrasive else "saltwater_mod")
 
-    # Кислород (строка 19) — независимо от остального
+    # Кислород
     if corr_oxygen == 'yes':
         environments.append("oxygen")
 
     # Таблица 14
-    # Формат: среда → {cylinder_cr, cylinder_hn, plunger_cr, plunger_t, valve_ss, valve_st}
-    # A=стоек, B=слабая коррозия, C=сильная коррозия, X=неприменим
     TABLE_14 = {
         "non_corr":              {"cyl_cr":"A","cyl_hn":"A","plu_cr":"A","plu_t":"A","val_ss":"A","val_st":"A","label":"Некоррозионная"},
         "non_corr_abrasive":     {"cyl_cr":"A","cyl_hn":"A","plu_cr":"A","plu_t":"A","val_ss":"A","val_st":"A","label":"Некоррозионная + абразивная"},
@@ -355,11 +353,11 @@ def get_material_recommendation(answers_dict):
     }
 
     GRADE_LABEL = {
-        "A": {"text": "Стоек",            "color": "#166534", "bg": "#f0fdf4", "border": "#bbf7d0"},
-        "B": {"text": "Слабая коррозия",  "color": "#92400e", "bg": "#fffbeb", "border": "#fde68a"},
-        "C": {"text": "Сильная коррозия", "color": "#be123c", "bg": "#fff1f2", "border": "#fecdd3"},
-        "X": {"text": "Неприменим",       "color": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb"},
-        "-": {"text": "Нет данных",       "color": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb"},
+        "A": {"text": "Стоек",            "color": "#166534", "bg": "#f0fdf4", "border": "#bbf7d0", "priority": 5},
+        "B": {"text": "Слабая коррозия",  "color": "#92400e", "bg": "#fffbeb", "border": "#fde68a", "priority": 4},
+        "C": {"text": "Сильная коррозия", "color": "#be123c", "bg": "#fff1f2", "border": "#fecdd3", "priority": 3},
+        "X": {"text": "Неприменим",       "color": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb", "priority": 1},
+        "-": {"text": "Нет данных",       "color": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb", "priority": 0},
     }
 
     if not environments:
@@ -373,9 +371,9 @@ def get_material_recommendation(answers_dict):
 
         def grade(code):
             g = GRADE_LABEL.get(code, GRADE_LABEL["-"])
-            return {"code": code, **g}
+            return {"code": code, "text": g["text"], "color": g["color"], 
+                    "bg": g["bg"], "border": g["border"], "priority": g["priority"]}
 
-        # Лучший вариант цилиндра — берём с наивысшей оценкой
         cyl_options = [
             {"material": "CR (Угл. сталь + хром)", "slug": "cyl_cr", **grade(row["cyl_cr"])},
             {"material": "HN (Лег. сталь + азотир.)", "slug": "cyl_hn", **grade(row["cyl_hn"])},
@@ -389,36 +387,56 @@ def get_material_recommendation(answers_dict):
             {"material": "Кобальтовый сплав ST", "slug": "val_st", **grade(row["val_st"])},
         ]
 
-        # Рекомендованный — первый с оценкой A, иначе B, иначе лучший из доступных
-        def best(options):
-            for code in ("A", "B"):
-                for o in options:
-                    if o["code"] == code:
-                        return o
-            return options[0]
+        # Возвращает ВСЕ варианты с максимальным приоритетом (лучшие для ЭТОЙ среды)
+        def best_multiple(options):
+            if not options:
+                return []
+            max_priority = max(o["priority"] for o in options)
+            return [o for o in options if o["priority"] == max_priority]
 
         rows.append({
-            "label":      row["label"],
-            "cyl_best":   best(cyl_options),
-            "cyl_all":    cyl_options,
-            "plu_best":   best(plu_options),
-            "plu_all":    plu_options,
-            "val_best":   best(val_options),
-            "val_all":    val_options,
+            "label":         row["label"],
+            "cyl_best":      best_multiple(cyl_options),
+            "cyl_all":       cyl_options,
+            "plu_best":      best_multiple(plu_options),
+            "plu_all":       plu_options,
+            "val_best":      best_multiple(val_options),
+            "val_all":       val_options,
         })
     
-    # Общий вывод — берём худшую оценку по каждому узлу
-    GRADE_ORDER = {"X": 0, "C": 1, "B": 2, "A": 3, "-": 4}
-
-    def worst(options_list):
-        # options_list — список best-вариантов из каждой среды
-        return min(options_list, key=lambda o: GRADE_ORDER.get(o["code"], 4))
+    # ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ: собирает НАИХУДШИЕ варианты из всех сред
+    # Потому что если одна среда требует X, а другая A — нужно выбрать X (самый строгий)
+    def collect_worst_across_environments(rows, component_key):
+        """
+        Собирает наихудшие (самые низкие приоритеты) материалы из всех сред.
+        Для итоговой рекомендации выбираем самый строгий вариант.
+        """
+        all_materials = {}
+        
+        for row in rows:
+            for item in row[component_key]:  # item — это лучший вариант для ЭТОЙ среды
+                material_name = item["material"]
+                if material_name not in all_materials:
+                    all_materials[material_name] = item
+                else:
+                    # Если у этого материала в другой среде приоритет ниже — обновляем
+                    if item["priority"] < all_materials[material_name]["priority"]:
+                        all_materials[material_name] = item
+        
+        if not all_materials:
+            return []
+        
+        # Находим НАИМЕНЬШИЙ приоритет среди всех материалов (самый плохой)
+        min_priority = min(item["priority"] for item in all_materials.values())
+        
+        # Возвращаем все материалы с этим минимальным приоритетом
+        return [item for item in all_materials.values() if item["priority"] == min_priority]
 
     if rows:
         summary = {
-            "cyl": worst([row["cyl_best"] for row in rows]),
-            "plu": worst([row["plu_best"] for row in rows]),
-            "val": worst([row["val_best"] for row in rows]),
+            "cyl": collect_worst_across_environments(rows, "cyl_best"),
+            "plu": collect_worst_across_environments(rows, "plu_best"),
+            "val": collect_worst_across_environments(rows, "val_best"),
         }
     else:
         summary = None
