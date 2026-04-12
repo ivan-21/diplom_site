@@ -168,11 +168,12 @@ def get_pump_recommendation(answers_dict):
     # ── TH рекомендации ── Оптимальны для высокодебитных скважин малой глубины !!без газов(low)
     
     if depth <= 900 and debit == 'high':
-        add("TH", +100, "Для высокодебитных скважин с малой глубины без газированной жидкости. — TH рекомендовано")
-        log.append("Для высокодебитных скважин с малой глубины без газированной жидкости. — TH +100")
-    if gas != 'low':
-        add("TH", -1000, "Не применять для газированных жидкостей. — TH не рекомендовано")
-        log.append("Не применять для газированных жидкостей. — TH -1000")
+        add("TH", +50, "Для высокодебитных скважин с малой глубины без газированной жидкости. — TH рекомендовано")
+        log.append("Для высокодебитных скважин с малой глубины без газированной жидкости. — TH +50")
+    if gas == 'high':
+        add("TH", -1000, "Высокий газовый фактор — TH не рекомендован")
+    elif gas == 'medium':
+        add("TH", -30, "Среднее содержание газа — TH нежелателен")
     
     # ── Манжетное крепление для RHA и RHB──
 
@@ -229,50 +230,6 @@ def get_pump_recommendation(answers_dict):
         "has_data": depth is not None or volume is not None,        
         "manjetnoe":         manjetnoe,         
         "manjetnoe_reasons": manjetnoe_reasons,  
-    }
-
-def get_plunger_recommendation(answers_dict):
-    depth_raw    = answers_dict.get("glubina_pogruzhenia", "")
-    nkt_diameter = answers_dict.get("nkt_diameter", "")
-
-    try:
-        depth = float(str(depth_raw).replace(",", ".")) if depth_raw else None
-    except:
-        depth = None
-
-    if depth is None:
-        return {"has_data": False}
-
-    # Длина плунжера по глубине (правило из справочника: 1 фут на 380-400м)
-    if depth <= 1500:
-        plunger_feet = 4
-        plunger_mm   = 1295
-        plunger_note = "Глубина до 1500 м"
-    elif depth <= 2000:
-        plunger_feet = 5
-        plunger_mm   = 1600
-        plunger_note = "Глубина до 2000 м"
-    else:
-        plunger_feet = 6
-        plunger_mm   = 1829
-        plunger_note = "Глубина свыше 2000 м"
-
-    # Таблица 9 — допустимые размеры насосов по диаметру НКТ
-    NKT_SIZES = {
-        "60.3": {"RH": ["20-106", "20-125"], "TH": ["20-125", "20-175"]},
-        "73.0": {"RH": ["25-150", "25-175"], "TH": ["25-225"]},
-        "88.9": {"RH": ["30-225"],           "TH": ["30-275"]},
-    }
-    nkt_sizes = NKT_SIZES.get(nkt_diameter, None)
-
-    return {
-        "has_data":     True,
-        "depth":        depth,
-        "plunger_feet": plunger_feet,
-        "plunger_mm":   plunger_mm,
-        "plunger_note": plunger_note,
-        "nkt_diameter": nkt_diameter,
-        "nkt_sizes":    nkt_sizes,
     }
 
 def get_material_recommendation(answers_dict):
@@ -445,4 +402,292 @@ def get_material_recommendation(answers_dict):
         "has_data": True,
         "rows":     rows,
         "summary":  summary,
+    }
+
+def get_cylinder_recommendation(answers_dict):
+    """
+    Расчёт длины цилиндра и удлинителей по формуле приложения В справочника:
+        В + У = Н + П + К
+    где:
+        В — длина цилиндра (футы)
+        У — суммарная длина удлинителей (футы)
+        Н — ход плунжера (футы)
+        П — длина плунжера (футы) — рассчитывается здесь по глубине
+        К — конструктивный коэффициент (зависит от типа насоса)
+    """
+
+    K_TABLE = {
+        "20-106 RHAM": 1.211,
+        "20-106 RHBM": 1.178,
+        "20-125 RHAM": 1.214,
+        "20-125 RHBM": 1.178,
+        "25-150 RHAM": 1.266,
+        "25-150 RHBM": 1.289,
+        "25-175 RHAM": 1.352,
+        "25-175 RHBM": 1.375,
+        "20-125 THM":  1.614,
+        "20-175 THM":  1.877,
+        "25-225 THM":  2.080,
+        "30-275 THM":  2.293,
+    }
+
+    STD_CYL_RH = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+    STD_CYL_TH = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+
+    # Стандартные пары удлинителей (суммарная длина → (удл1, удл2))
+    EXT_PAIRS = {
+        2.0: (1.0, 1.0),
+        3.0: (1.5, 1.5),
+        4.0: (2.0, 2.0),
+        5.0: (2.0, 3.0),
+    }
+
+    depth_raw     = answers_dict.get("glubina_pogruzhenia", "")
+    stroke_raw    = answers_dict.get("plunger_length", "")
+    pump_type_key = answers_dict.get("pump_type_full", "")
+
+    try:
+        depth = float(str(depth_raw).replace(",", ".")) if depth_raw else None
+    except:
+        depth = None
+
+    try:
+        stroke_mm = float(str(stroke_raw).replace(",", ".")) if stroke_raw else None
+    except:
+        stroke_mm = None
+
+    if depth is None and stroke_mm is None:
+        return {"has_data": False}
+
+    # ── Длина плунжера П по глубине (перенесено из get_plunger_recommendation) ──
+    if depth is not None:
+        if depth <= 1500:
+            P = 4
+            plunger_mm   = 1295
+            plunger_note = "Глубина до 1500 м — 4 фута"
+        elif depth <= 2000:
+            P = 5
+            plunger_mm   = 1600
+            plunger_note = "Глубина до 2000 м — 5 футов"
+        else:
+            P = 6
+            plunger_mm   = 1829
+            plunger_note = "Глубина свыше 2000 м — 6 футов"
+    else:
+        P = 4
+        plunger_mm   = 1295
+        plunger_note = "Глубина не указана — принято 4 фута по умолчанию"
+
+    # ── Ход плунжера Н ──
+    if stroke_mm is not None:
+        N = stroke_mm / 304.8
+    elif depth is not None:
+        stroke_mm = 3000
+        N = stroke_mm / 304.8
+    else:
+        return {"has_data": False}
+
+    K        = K_TABLE.get(pump_type_key)
+    is_TH    = pump_type_key.endswith("THM") if pump_type_key else False
+    std_cyl  = STD_CYL_TH if is_TH else STD_CYL_RH
+
+    if K is not None:
+        required = N + P + K  # минимальное В+У
+
+        results = []
+        for U, (u1, u2) in EXT_PAIRS.items():
+            V_needed = required - U
+            V = next((c for c in std_cyl if c >= V_needed), None)
+            if V is None:
+                continue
+            actual_BU        = V + U
+            actual_stroke_mm = round(stroke_mm + (actual_BU - required) * 304.8)
+
+            results.append({
+                "U":           U,
+                "u1":          u1,
+                "u2":          u2,
+                "V":           V,
+                "BU":          actual_BU,
+                "stroke_mm":   actual_stroke_mm,
+                "designation": f"{pump_type_key} {int(V)}-{int(P)}-{u1}-{u2}",
+            })
+
+        return {
+            "has_data":    True,
+            "pump_type":   pump_type_key,
+            "K":           K,
+            "P":           P,
+            "plunger_mm":  plunger_mm,
+            "plunger_note": plunger_note,
+            "N_ft":        round(N, 3),
+            "stroke_mm":   round(stroke_mm),
+            "required_BU": round(required, 3),
+            "results":     results[:3],
+            "note":        None,
+        }
+
+    else:
+        # Тип насоса не выбран — даём диапазон
+        K_min, K_max = 1.178, 2.293
+        req_min = N + P + K_min
+        req_max = N + P + K_max
+
+        return {
+            "has_data":     True,
+            "pump_type":    None,
+            "K":            None,
+            "P":            P,
+            "plunger_mm":   plunger_mm,
+            "plunger_note": plunger_note,
+            "N_ft":         round(N, 3),
+            "stroke_mm":    round(stroke_mm),
+            "required_BU":  None,
+            "req_range":    (round(req_min, 1), round(req_max, 1)),
+            "results":      [],
+            "note":         f"Укажите тип насоса для точного расчёта. "
+                            f"Ориентировочная В+У: {round(req_min, 1)}–{round(req_max, 1)} фута.",
+        }
+
+
+def get_fit_recommendation(answers_dict):
+    """
+    Подбор группы посадки плунжера (Fit-1..Fit-5) по таблицам 6 и 13 справочника.
+
+    Таблица 6 — группы посадок:
+        Fit-1: номинал 0,025 мм  диапазон 0,025–0,088
+        Fit-2: номинал 0,050 мм  диапазон 0,050–0,113
+        Fit-3: номинал 0,075 мм  диапазон 0,075–0,138
+        Fit-4: номинал 0,100 мм  диапазон 0,100–0,163
+        Fit-5: номинал 0,125 мм  диапазон 0,125–0,188
+
+    Таблица 13 (Шеллер-Блекманн) — рекомендации по диаметру:
+        106 (27,0 мм):  Fit-2, Fit-3  → оптимальная Fit-2
+        125 (31,8 мм):  Fit-2, Fit-3  → оптимальная Fit-2
+        150 (38,1 мм):  Fit-2, Fit-3  → оптимальная Fit-2
+        175 (44,5 мм):  Fit-2, Fit-3  → оптимальная Fit-2
+        225 (57,2 мм):  Fit-2, Fit-3, Fit-4  → оптимальная Fit-2
+        275 (69,9 мм):  Fit-3, Fit-4, Fit-5  → оптимальная Fit-3
+
+    Корректировки по условиям:
+        - Высоковязкая нефть → увеличить зазор на 1 группу
+        - Высокое содержание песка → уменьшить зазор на 1 группу (меньше утечек)
+        - Высокий газовый фактор → минимальный зазор (уменьшить мёртвый объём)
+    """
+
+    FIT_TABLE = {
+        1: {"nominal": 0.025, "range_min": 0.025, "range_max": 0.088},
+        2: {"nominal": 0.050, "range_min": 0.050, "range_max": 0.113},
+        3: {"nominal": 0.075, "range_min": 0.075, "range_max": 0.138},
+        4: {"nominal": 0.100, "range_min": 0.100, "range_max": 0.163},
+        5: {"nominal": 0.125, "range_min": 0.125, "range_max": 0.188},
+    }
+
+    # Рекомендации по диаметру: [допустимые], оптимальная
+    DIAMETER_FIT = {
+        "106": {"allowed": [2, 3],    "optimal": 2, "diam_mm": 27.0},
+        "125": {"allowed": [2, 3],    "optimal": 2, "diam_mm": 31.8},
+        "150": {"allowed": [2, 3],    "optimal": 2, "diam_mm": 38.1},
+        "175": {"allowed": [2, 3],    "optimal": 2, "diam_mm": 44.5},
+        "225": {"allowed": [2, 3, 4], "optimal": 2, "diam_mm": 57.2},
+        "275": {"allowed": [3, 4, 5], "optimal": 3, "diam_mm": 69.9},
+    }
+
+    # Получаем данные из ответов
+    # inner_diameter — условный размер насоса (106/125/150/175/225/275)
+    inner_diameter = answers_dict.get("inner_diameter", "")
+    sand    = answers_dict.get("sand_content", "none")
+    gas     = answers_dict.get("gas_factor", "low")
+    viscosity_raw = answers_dict.get("viscosity", "")   # вязкость в сП если есть
+
+    try:
+        viscosity = float(str(viscosity_raw).replace(",", ".")) if viscosity_raw else None
+    except:
+        viscosity = None
+
+    # Нормируем inner_diameter (берём только числовую часть "106", "125" и т.д.)
+    size_key = str(inner_diameter).strip().split("-")[-1] if inner_diameter else ""
+
+    diam_info = DIAMETER_FIT.get(size_key)
+    if not diam_info:
+        return {"has_data": False}
+
+    base_fit = diam_info["optimal"]
+    allowed  = diam_info["allowed"]
+    reasons  = []
+    adjustments = 0
+
+    # ── Корректировки ────────────────────────────────────────────────────────
+
+    # Высоковязкая нефть (> 25 сП — предел по справочнику, или явно высокая)
+    high_viscosity = viscosity is not None and viscosity > 15
+    if high_viscosity:
+        adjustments += 1
+        reasons.append({
+            "text": f"Высокая вязкость ({viscosity:.0f} сП) — увеличен зазор для обеспечения смазки",
+            "direction": "up"
+        })
+
+    # Высокое содержание песка — минимизируем зазор чтобы частицы не проникали
+    if sand == 'high':
+        adjustments -= 1
+        reasons.append({
+            "text": "Высокое содержание песка — уменьшен зазор для снижения абразивного износа",
+            "direction": "down"
+        })
+    elif sand == 'medium':
+        reasons.append({
+            "text": "Среднее содержание песка — зазор в пределах нормы",
+            "direction": "neutral"
+        })
+
+    # Высокий газовый фактор — минимальный зазор (уменьшаем мёртвый объём)
+    if gas == 'high':
+        adjustments -= 1
+        reasons.append({
+            "text": "Высокий газовый фактор — минимальный зазор для уменьшения мёртвого объёма",
+            "direction": "down"
+        })
+    elif gas == 'medium':
+        reasons.append({
+            "text": "Среднее содержание газа — рекомендуется минимальный зазор из допустимых",
+            "direction": "neutral"
+        })
+
+    # Итоговая группа посадки с ограничением по допустимым
+    recommended_fit = base_fit + adjustments
+    recommended_fit = max(min(allowed), min(max(allowed), recommended_fit))
+
+    fit_data = FIT_TABLE[recommended_fit]
+    optimal_data = FIT_TABLE[base_fit]
+
+    # Все допустимые группы с данными
+    allowed_fits = []
+    for f in allowed:
+        fd = FIT_TABLE[f]
+        allowed_fits.append({
+            "fit":       f,
+            "label":     f"Fit-{f}",
+            "nominal":   fd["nominal"],
+            "range_min": fd["range_min"],
+            "range_max": fd["range_max"],
+            "is_optimal":     f == base_fit,
+            "is_recommended": f == recommended_fit,
+        })
+
+    return {
+        "has_data":        True,
+        "size_key":        size_key,
+        "diam_mm":         diam_info["diam_mm"],
+        "base_fit":        base_fit,
+        "recommended_fit": recommended_fit,
+        "nominal_mm":      fit_data["nominal"],
+        "range_min":       fit_data["range_min"],
+        "range_max":       fit_data["range_max"],
+        "allowed_fits":    allowed_fits,
+        "reasons":         reasons,
+        "note": (
+            "Минимальный зазор обеспечивает максимальный КПД. "
+            "Для достаточной смазки необходимо не менее 2% утечки нефти."
+        ),
     }

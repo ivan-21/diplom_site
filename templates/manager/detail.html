@@ -104,134 +104,643 @@
       </div>
       {% endif %}
     </div>
-      {% if recommendation and recommendation.has_data %}
+    {# ═══════════════════════════════════════════════════════════════ #}
+{# ПАНЕЛЬ: Итоговое обозначение по API (собирается динамически) #}
+{# ═══════════════════════════════════════════════════════════════ #}
+
+
+
+<style>
+  .api-seg {
+    display:inline-flex; align-items:center;
+    padding:4px 10px; border-radius:8px;
+    font-size:16px; font-weight:900;
+    transition: all .2s;
+  }
+  .api-seg-empty {
+    background:var(--bg); color:var(--muted);
+    border:1px dashed var(--line);
+  }
+  .api-seg-filled {
+    background:#eff6ff; color:#1d4ed8;
+    border:1px solid #bfdbfe;
+  }
+  .api-seg-filled.seg-green {
+    background:#f0fdf4; color:#166534;
+    border:1px solid #bbf7d0;
+  }
+  .api-mat {
+    display:inline-flex; align-items:center;
+    padding:3px 8px; border-radius:6px;
+    font-size:12px; font-weight:700;
+    transition: all .2s;
+  }
+  .api-mat-empty {
+    background:var(--bg); color:var(--muted);
+    border:1px dashed var(--line);
+  }
+  .api-mat-filled {
+    background:#f0fdf4; color:#166534;
+    border:1px solid #bbf7d0;
+  }
+</style>
+
+{# ═══════════════════════════════════════════════════════════════ #}
+{# ПАНЕЛЬ: Итоговое обозначение по API                            #}
+{# ═══════════════════════════════════════════════════════════════ #}
+<style>
+.api-panel {
+  border:1px solid var(--line); border-radius:var(--radius);
+  overflow:hidden; margin-bottom:20px;
+  position:sticky; top:10px; z-index:100;
+  box-shadow:0 4px 32px rgba(0,0,0,.10);
+}
+.api-panel-head {
+  padding:10px 18px; background:var(--accent2); color:#fff;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.api-panel-head-title { font-size:13px; font-weight:900; letter-spacing:.3px; }
+.api-panel-body {
+  background:#1c1f26; padding:20px 24px 18px;
+}
+
+/* Полная строка обозначения */
+.api-designation-full {
+  font-family: 'Courier New', monospace;
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 20px;
+  min-height: 36px;
+  transition: all .2s;
+}
+.api-designation-full .seg-placeholder { color: #4b5563; }
+
+/* Сегменты */
+.api-segments {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.api-seg-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.api-sep {
+  color: #6b7280;
+  font-size: 50px;
+  font-weight: 400;
+  padding: 0 2px;
+  margin-top: -17px; /* выравнивание по таблетке */
+  align-self: flex-start;
+}
+.api-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transition: all .25s;
+  border: 2px solid transparent;
+}
+.api-pill-empty {
+  background: #2d3139;
+  color: #4b5563;
+  border-color: #374151;
+}
+.api-pill-filled { border-color: transparent; }
+
+/* Цвета сегментов (как на картинке) */
+.pill-nkt    { background: #c2410c; color: #fff; }  /* оранжево-коричневый */
+.pill-size   { background: #15803d; color: #fff; }  /* зелёный */
+.pill-r      { background: #0369a1; color: #fff; }  /* синий */
+.pill-h      { background: #1d4ed8; color: #fff; }  /* тёмно-синий */
+.pill-lock   { background: #b45309; color: #fff; }  /* золотисто-коричневый */
+.pill-mount  { background: #92400e; color: #fff; }  /* тёмно-коричневый */
+.pill-cyl    { background: #374151; color: #e5e7eb; } /* серый */
+.pill-plun   { background: #374151; color: #e5e7eb; }
+.pill-ext1   { background: #374151; color: #e5e7eb; }
+.pill-ext2   { background: #374151; color: #e5e7eb; }
+
+/* Подписи под таблетками */
+.api-pill-label {
+  font-size: 10px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 72px;
+  min-height: 60px;
+}
+.api-pill-label b {
+  display: block;
+  color: #9ca3af;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+/* Строка материалов */
+.api-materials {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #2d3139;
+}
+.api-mat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all .2s;
+}
+.api-mat-empty { background:#2d3139; color:#4b5563; border:1px dashed #374151; }
+.api-mat-filled { background:#14532d; color:#86efac; border:1px solid #166534; }
+.api-mat-label { font-size:10px; color:#6b7280; font-weight:400; }
+
+/* Кнопки в шапке */
+.api-head-btn {
+  padding:4px 12px; border-radius:8px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1); color:#fff;
+  font-size:11px; font-weight:700; cursor:pointer;
+  transition:all .15s;
+}
+.api-head-btn:hover { background:rgba(255,255,255,.2); }
+#api-complete-badge {
+  display:none; padding:3px 10px; border-radius:999px;
+  background:rgba(34,197,94,.25); color:#86efac;
+  font-size:11px; font-weight:800;
+}
+</style>
+
+<div class="api-panel">
+  <div class="api-panel-head">
+    <div class="api-panel-head-title">Структура обозначения насоса по API</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="api-complete-badge">✓ Готово</span>
+      <button class="api-head-btn" onclick="copyApiDesignation()">Копировать</button>
+    </div>
+  </div>
+
+  <div class="api-panel-body">
+
+    <!-- Полная строка -->
+    <div class="api-designation-full" id="api-full-line">—</div>
+
+    <!-- Сегменты с таблетками -->
+    <div class="api-segments">
+
+      <!-- НКТ -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-nkt" id="seg-nkt">?</div>
+        <div class="api-pill-label"><b>НКТ</b>20 = 60,3 мм<br>25 = 73,0 мм<br>30 = 88,9 мм</div>
+      </div>
+      <div class="api-sep">-</div>
+
+      <!-- Диаметр -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-size" id="seg-size">???</div>
+        <div class="api-pill-label"><b>Внутр. диаметр</b>106 = 27,0 мм<br>125 = 31,8 мм<br>150 = 38,1 мм<br>175 = 44,5 мм<br>225 = 57,2 мм<br>275 = 69,9 мм</div>
+      </div>
+      <div class="api-sep" style="margin-top:10px;"> </div>
+      <div class="api-sep">-</div>
+
+      <!-- R/T -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-r" id="seg-r">?</div>
+        <div class="api-pill-label"><b>Тип насоса</b>R = вставной<br>T = трубный</div>
+      </div>
+
+      <!-- H/W -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-h" id="seg-h">?</div>
+        <div class="api-pill-label"><b>Тип цилиндра</b>H = толстост.</div>
+      </div>
+
+      <!-- A/B/T -->
+       {% if selected_pump != "TH"%}
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-lock" id="seg-lock">?</div>
+        <div class="api-pill-label"><b>Замок</b>A = верхнее<br>B = нижнее<br>T = нижн. подв.</div>
+      </div>{% endif %}
+
+      <!-- M/C -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-mount" id="seg-mount">?</div>
+        <div class="api-pill-label"><b>Крепление</b>M = механич.<br>C = манжетное</div>
+      </div>
+      <div class="api-sep">  </div>
+      <div class="api-sep">-</div>
+
+      <!-- Длина цилиндра -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-cyl" id="seg-cyl">?</div>
+        <div class="api-pill-label"><b>Длина цилиндра</b>футы</div>
+      </div>
+      <div class="api-sep">-</div>
+
+      <!-- Длина плунжера -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-plun" id="seg-plun">?</div>
+        <div class="api-pill-label"><b>Длина плунжера</b>футы</div>
+      </div>
+      <div class="api-sep">-</div>
+
+      <!-- Удлинитель 1 -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-ext1" id="seg-ext1">?</div>
+        <div class="api-pill-label"><b>Верхний удл.</b>футы</div>
+      </div>
+      <div class="api-sep">-</div>
+
+      <!-- Удлинитель 2 -->
+      <div class="api-seg-wrap">
+        <div class="api-pill api-pill-empty pill-ext2" id="seg-ext2">?</div>
+        <div class="api-pill-label"><b>Нижний удл.</b>футы</div>
+      </div>
+
+    </div>
+
+    <!-- Материалы -->
+    <div class="api-materials">
+      <span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;align-self:center;">Исполнение:</span>
+      <span class="api-mat-pill api-mat-empty" id="mat-cyl"><span class="api-mat-label">Цилиндр:</span> ?</span>
+      <span class="api-mat-pill api-mat-empty" id="mat-plu"><span class="api-mat-label">Плунжер:</span> ?</span>
+      <span class="api-mat-pill api-mat-empty" id="mat-val"><span class="api-mat-label">Клапаны:</span> ?</span>
+      <span class="api-mat-pill api-mat-empty" id="mat-fit"><span class="api-mat-label">Зазор:</span> ?</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Начальное состояние из Django-контекста ───────────────────────
+const API = {
+  nkt:      "{{ selected_nkt|default:'' }}",
+  size:     "{{ selected_size|default:'' }}",      // "20-125"
+  pumpCode: "{{ selected_pump|default:'' }}",       // "RHA"
+  typeFull: "{{ selected_pump_full|default:'' }}", // "20-125 RHAM"
+  cylLen:   "",
+  plunLen:  "{{ cylinder_rec.P|default:'' }}",
+  ext1:     "",
+  ext2:     "",
+  fit:      "{{ fit_rec.recommended_fit|default:'' }}",
+  cylMat:   "",
+  pluMat:   "",
+  valMat:   "",
+};
+
+// Восстанавливаем первый вариант цилиндра как дефолт
+{% if cylinder_rec and cylinder_rec.results %}
+  API.cylLen = "{{ cylinder_rec.results.0.V }}";
+  API.ext1   = "{{ cylinder_rec.results.0.u1 }}";
+  API.ext2   = "{{ cylinder_rec.results.0.u2 }}";
+{% endif %}
+
+// Восстанавливаем материалы
+{% if material_rec and material_rec.summary %}
+  {% if material_rec.summary.cyl %}
+    API.cylMat = "{{ material_rec.summary.cyl.0.material|truncatechars:6 }}";
+  {% endif %}
+  {% if material_rec.summary.plu %}
+    API.pluMat = "{{ material_rec.summary.plu.0.material|truncatechars:6 }}";
+  {% endif %}
+  {% if material_rec.summary.val %}
+    API.valMat = "{{ material_rec.summary.val.0.material|truncatechars:6 }}";
+  {% endif %}
+{% endif %}
+
+// ── Парсим typeFull → отдельные буквы ────────────────────────────
+// Пример: "20-125 RHAM" → R, H, A, M
+function parseTypeCode(typeFull) {
+  if (!typeFull) return {r:"?", h:"?", lock:"?", mount:"?"};
+  const parts = typeFull.trim().split(" ");
+  const code = parts[1] || "";  // "RHAM" или "THM"
+  if (code.startsWith("TH")) {
+    return {r:"T", h:"H", lock:"M", mount: code[3] || "M"};
+  }
+  // RH{A|B|T}{M|C}
+  return {
+    r:     code[0] || "?",
+    h:     code[1] || "?",
+    lock:  code[2] || "?",
+    mount: code[3] || "?",
+  };
+}
+
+// ── Получаем номер НКТ из "20-125" ───────────────────────────────
+function nktPrefix(size) {
+  if (!size) return "";
+  return size.split("-")[0] || "";
+}
+
+// ── Обновляем одну таблетку ───────────────────────────────────────
+function setPill(id, value, colorClass) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value && value !== "?") {
+    el.textContent = value;
+    el.className = "api-pill api-pill-filled " + colorClass;
+  } else {
+    el.textContent = "?";
+    el.className = "api-pill api-pill-empty " + colorClass;
+  }
+}
+
+function setMat(id, label, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value) {
+    el.innerHTML = `<span class="api-mat-label">${label}:</span> ${value}`;
+    el.className = "api-mat-pill api-mat-filled";
+  } else {
+    el.innerHTML = `<span class="api-mat-label">${label}:</span> ?`;
+    el.className = "api-mat-pill api-mat-empty";
+  }
+}
+
+function renderPanel() {
+  const tc = parseTypeCode(API.typeFull);
+  const nktNum = nktPrefix(API.size);
+  const innerSize = API.size ? API.size.split("-")[1] : "";
+
+  // Проверяем тип насоса: T = трубный (TH), R = вставной (RH)
+  // В вашей версии была логика isTH = tc.r !== "T", оставляем её, если она работает корректно
+  const isTH = tc.r !== "T";
+
+  setPill("seg-nkt",   nktNum,      "pill-nkt");
+  setPill("seg-size",  innerSize,   "pill-size");
+  setPill("seg-r",     tc.r,        "pill-r");
+  setPill("seg-h",     tc.h,        "pill-h");
+  
+  setPill("seg-lock",  isTH ? tc.lock : "", "pill-lock");
+  
+  setPill("seg-mount", tc.mount,    "pill-mount");
+  setPill("seg-cyl",   API.cylLen,  "pill-cyl");
+  setPill("seg-plun",  API.plunLen, "pill-plun");
+  setPill("seg-ext1",  API.ext1,    "pill-ext1");
+  setPill("seg-ext2",  API.ext2,    "pill-ext2");
+
+  setMat("mat-cyl", "Цилиндр", API.cylMat);
+  setMat("mat-plu", "Плунжер", API.pluMat);
+  setMat("mat-val", "Клапаны", API.valMat);
+  setMat("mat-fit", "Зазор",   API.fit ? "Fit-" + API.fit : "");
+
+  // Обработка правой части (длины): убираем пробелы, чтобы "1, 0" превратилось в "1,0"
+  const cylPart = [API.cylLen, API.plunLen, API.ext1, API.ext2]
+    .map(v => (v ? v.toString().replace(/\s/g, "") : "?"))
+    .join("-");
+
+  const fullLine = document.getElementById("api-full-line");
+
+  if (API.size || API.typeFull) {
+    const lockSpan = isTH 
+      ? `<span style="color:#fbbf24">${tc.lock || "?"}</span>` 
+      : "";
+
+    // Формируем строку с дефисами вместо пробелов вокруг блока типа насоса
+    fullLine.innerHTML =
+      `<span style="color:#ef4444">${nktNum || "?"}</span>` +
+      `<span style="color:#9ca3af">-</span>` +
+      `<span style="color:#34d399">${innerSize || "???"}</span>` +
+      `<span style="color:#9ca3af">-</span>` + // Черточка перед THM
+      `<span style="color:#60a5fa">${tc.r || "?"}</span>` +
+      `<span style="color:#818cf8">${tc.h || "?"}</span>` +
+      lockSpan + 
+      `<span style="color:#d97706">${tc.mount || "?"}</span>` +
+      `<span style="color:#9ca3af">-</span>` + // Черточка после THM
+      `<span style="color:#9ca3af">${cylPart}</span>`;
+  } else {
+    fullLine.textContent = "—";
+  }
+
+  const done = API.size && API.cylLen && API.fit;
+  document.getElementById("api-complete-badge").style.display = done ? "inline-flex" : "none";
+}
+
+function copyApiDesignation() {
+  const tc = parseTypeCode(API.typeFull);
+  const innerSize = API.size ? API.size.split("-")[1] : "";
+  const nktNum = nktPrefix(API.size);
+  const typeCode = `${tc.r}${tc.h}${tc.lock}${tc.mount}`;
+  const cylPart = [API.cylLen, API.plunLen, API.ext1, API.ext2].filter(Boolean).join("-");
+  const text = `${nktNum}-${innerSize} ${typeCode} ${cylPart}`.trim();
+
+  if (text && text !== "-  ") {
+    navigator.clipboard.writeText(text).then(() => {
+      const btns = document.querySelectorAll(".api-head-btn");
+      btns.forEach(b => { b.textContent = "✓ Скопировано"; });
+      setTimeout(() => btns.forEach(b => b.textContent = "Копировать"), 2000);
+    });
+  }
+}
+
+// ── Клик на карточки цилиндра ─────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  renderPanel();
+
+  document.querySelectorAll(".cyl-variant-card").forEach(card => {
+    card.style.cursor = "pointer";
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".cyl-variant-card").forEach(c => {
+        c.style.outline = "";
+      });
+      card.style.outline = "2px solid #3b82f6";
+      card.style.outlineOffset = "2px";
+
+      const cyl = card.dataset.cyl.split("-");  // "14-4-1.5-1.5"
+      API.cylLen  = cyl[0] || "";
+      API.plunLen = cyl[1] || "";
+      API.ext1    = cyl[2] || "";
+      API.ext2    = cyl[3] || "";
+      renderPanel();
+    });
+  });
+
+  // Клик на Fit-карточки
+  document.querySelectorAll(".fit-variant-card").forEach(card => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".fit-variant-card").forEach(c => c.style.outline = "");
+      card.style.outline = "2px solid #3b82f6";
+      card.style.outlineOffset = "2px";
+      API.fit = card.dataset.fit;
+      renderPanel();
+    });
+  });
+});
+</script>
+
+    {% if recommendation and recommendation.has_data %}
 <style>
   .rec2-block { border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
   .rec2-head { padding:12px 18px; background:var(--accent2); color:#fff; display:flex; align-items:center; gap:10px; }
   .rec2-head-title { font-size:14px; font-weight:900; }
   .rec2-body { padding:16px; background:#fff; }
-
-  .pump-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
-  .pump-card { border:1px solid var(--line); border-radius:12px; padding:16px; position:relative; background:var(--bg); }
+ 
+  .pump-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+ 
+  .pump-card {
+    border:1px solid var(--line); border-radius:12px; padding:16px;
+    background:var(--bg); display:flex; flex-direction:column;
+  }
   .pump-card.recommended { border-color:rgba(34,197,94,.5); background:rgba(34,197,94,.03); }
   .pump-card.acceptable  { border-color:rgba(234,179,8,.5);  background:rgba(234,179,8,.03); }
-  .pump-card.not_recommended { border-color:var(--line); opacity:.55; }
-
+  .pump-card.not_recommended { border-color:var(--line); opacity:.5; }
+ 
   .pump-verdict {
     display:inline-flex; align-items:center; gap:5px;
     font-size:10px; font-weight:800; letter-spacing:.5px;
     text-transform:uppercase; padding:3px 8px;
-    border-radius:999px; margin-bottom:10px;
+    border-radius:999px; margin-bottom:10px; width:fit-content;
   }
   .pump-verdict.recommended { background:rgba(34,197,94,.12); color:#166534; }
   .pump-verdict.acceptable  { background:rgba(234,179,8,.12);  color:#92400e; }
   .pump-verdict.not_recommended { background:#f3f4f6; color:var(--muted); }
-
-  .pump-code { font-size:20px; font-weight:900; margin-bottom:2px; }
+ 
+  .pump-code { font-size:22px; font-weight:900; margin-bottom:2px; }
   .pump-name { font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
-
+ 
   .score-bar { height:3px; background:var(--line); border-radius:2px; margin-bottom:12px; overflow:hidden; }
   .score-bar-fill { height:100%; border-radius:2px; }
-  .recommended .score-bar-fill { background:#22c55e; }
-  .acceptable  .score-bar-fill { background:#eab308; }
-  .not_recommended .score-bar-fill { background:#d1d5db; }
-
-  .pump-reasons { list-style:none; padding:0; margin:0; }
-  .pump-reasons li { font-size:11px; color:var(--muted); padding:3px 0; display:flex; gap:6px; line-height:1.4; border-bottom:1px solid var(--line); }
+  .pump-card.recommended .score-bar-fill { background:#22c55e; }
+  .pump-card.acceptable  .score-bar-fill { background:#eab308; }
+  .pump-card.not_recommended .score-bar-fill { background:#d1d5db; }
+ 
+  .pump-reasons { list-style:none; padding:0; margin:0 0 auto; }
+  .pump-reasons li {
+    font-size:11px; color:var(--muted); padding:3px 0;
+    display:flex; gap:6px; line-height:1.4;
+    border-bottom:1px solid var(--line);
+  }
   .pump-reasons li:last-child { border-bottom:none; }
   .pump-reasons li.good { color:#166534; }
   .pump-reasons li.good::before { content:'✓'; color:#22c55e; flex-shrink:0; }
   .pump-reasons li.bad  { color:#be123c; }
   .pump-reasons li.bad::before  { content:'✗'; color:#f43f5e; flex-shrink:0; }
   .pump-reasons li:not(.good):not(.bad)::before { content:'›'; color:var(--muted); flex-shrink:0; }
-
+ 
+  .size-btn {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:6px 10px; border-radius:8px;
+    font-size:12px; font-weight:800; cursor:pointer;
+    border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8;
+    margin:2px; transition:all .12s;
+  }
+  .size-btn:hover { background:#dbeafe; }
+  .size-btn.size-btn-selected {
+    border:2px solid #22c55e; background:#f0fdf4; color:#166534;
+  }
+  .size-btn-th {
+    border-color:#bbf7d0; background:#f0fdf4; color:#166534;
+  }
+  .size-btn-th:hover { background:#dcfce7; }
+  .size-btn-nkt {
+    font-size:10px; font-weight:400; opacity:.65;
+  }
+ 
   .rec2-log { margin-top:12px; padding:12px 14px; background:var(--bg); border:1px solid var(--line); border-radius:10px; font-size:11px; color:var(--muted); line-height:2; }
   .rec2-log-title { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
 </style>
-
+ 
 <div class="rec2-block">
   <div class="rec2-head">
     <div class="rec2-head-title">
       Рекомендация по подбору насоса
-      {% if recommendation.best %}
-        — {{ recommendation.best.code }}: {{ recommendation.best.name }}
-      {% endif %}
+      {% if recommendation.best %} — {{ recommendation.best.code }}: {{ recommendation.best.name }}{% endif %}
     </div>
   </div>
   <div class="rec2-body">
-{% if recommendation.nkt_sizes %}
-<div style="margin-bottom:16px;">
-  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-    Доступные размеры насосов — НКТ {{ recommendation.nkt_diameter }} мм
-  </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-    <div style="flex:1;min-width:180px;padding:14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;">
-      <div style="font-size:11px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
-        Вставной (RH)
-      </div>
-      {% for size in recommendation.nkt_sizes.RH %}
-        <span style="display:inline-flex;padding:5px 10px;border-radius:8px;border:1px solid #bfdbfe;background:#fff;font-size:13px;font-weight:800;margin:2px;">
-          {{ size }}
-        </span>
-      {% endfor %}
-    </div>
-    
-
-    <div style="flex:1;min-width:180px;padding:14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;">
-      <div style="font-size:11px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
-        Трубный (ТН)
-      </div>
-      {% for size in recommendation.nkt_sizes.TH %}
-        <span style="display:inline-flex;padding:5px 10px;border-radius:8px;border:1px solid #bbf7d0;background:#fff;font-size:13px;font-weight:800;margin:2px;">
-          {{ size }}
-        </span>
-      {% endfor %}
-    </div>
-
-    {% if recommendation.manjetnoe %}
-  {% with best=recommendation.best %}
-    {% if best.code == 'RHA' or best.code == 'RHB' %}
-    <div style="margin-top:14px; padding:14px 16px; border-radius:12px;
-                border:1px solid #fde68a; background:#fffbeb;
-                display:flex; gap:12px; align-items:flex-start;">
-      <span style="font-size:18px; flex-shrink:0;">⚠</span>
-      <div>
-        <div style="font-size:12px; font-weight:800; color:#92400e;
-                    text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">
-          Рекомендуется манжетное крепление
-        </div>
-        <div style="font-size:13px; color:#92400e; line-height:1.6;">
-          Для насоса {{ best.code }} в данных условиях рекомендуется
-          использовать манжетное крепление вместо механического.
-        </div>
-        <ul style="margin-top:8px; padding-left:16px; font-size:12px; color:#92400e;">
-          {% for reason in recommendation.manjetnoe_reasons %}
-            <li>{{ reason }}</li>
-          {% endfor %}
-        </ul>
-      </div>
+ 
+    {% comment %} Выбор менеджера {% endcomment %}
+    {% if selected_pump %}
+    <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;
+                border:1px solid #bbf7d0;background:#f0fdf4;
+                display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:800;color:#166534;">✓ Выбрано менеджером:</span>
+      <span style="font-size:14px;font-weight:900;color:#166534;">{{ selected_pump_full }}</span>
+      {% if selected_nkt %}
+        <span style="font-size:12px;color:#166534;opacity:.8;">· НКТ {{ selected_nkt }} мм</span>
+      {% endif %}
+      <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="margin-left:auto;">
+        {% csrf_token %}
+        <input type="hidden" name="pump_code" value="">
+        <input type="hidden" name="pump_size" value="">
+        <input type="hidden" name="nkt_diameter" value="">
+        <button type="submit" style="padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+                background:#fff;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">
+          Сбросить
+        </button>
+      </form>
     </div>
     {% endif %}
-  {% endwith %}
-{% endif %}
-
-  </div>
-</div>
-{% endif %}
+ 
+    {% comment %} НКТ из анкеты {% endcomment %}
+    {% if nkt_normalized %}
+    <div style="margin-bottom:12px;padding:7px 12px;border-radius:8px;
+                border:1px solid var(--line);background:var(--bg);font-size:12px;color:var(--muted);">
+      Диаметр НКТ из анкеты: <b>{{ nkt_normalized }} мм</b> — показаны подходящие размеры насосов
+    </div>
+    {% endif %}
+ 
+    {% comment %} Манжетное крепление {% endcomment %}
+    {% if recommendation.manjetnoe %}
+      {% with best=recommendation.best %}
+        {% if best.code == 'RHA' or best.code == 'RHB' %}
+        <div style="margin-bottom:14px;padding:14px 16px;border-radius:12px;
+                    border:1px solid #fde68a;background:#fffbeb;
+                    display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:18px;flex-shrink:0;">⚠</span>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#92400e;
+                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+              Рекомендуется манжетное крепление
+            </div>
+            <ul style="margin:0;padding-left:16px;font-size:12px;color:#92400e;">
+              {% for reason in recommendation.manjetnoe_reasons %}
+                <li>{{ reason }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endif %}
+      {% endwith %}
+    {% endif %}
+ 
+    {% comment %} Карточки насосов {% endcomment %}
     <div class="pump-cards">
       {% for pump in recommendation.pumps %}
-      <div class="pump-card {{ pump.verdict }}">
+      <div class="pump-card {{ pump.verdict }}"
+           style="{% if selected_pump == pump.code %}outline:3px solid #3b82f6;outline-offset:2px;{% endif %}">
+ 
         <div class="pump-verdict {{ pump.verdict }}">
           {% if pump.verdict == 'recommended' %}✓ Рекомендован
           {% elif pump.verdict == 'acceptable' %}~ Допустим
           {% else %}✗ Не рекомендован{% endif %}
         </div>
+ 
         <div class="pump-code">{{ pump.code }}</div>
         <div class="pump-name">{{ pump.name }}</div>
+ 
         <div class="score-bar">
           <div class="score-bar-fill" style="width:{{ pump.pct }}%"></div>
         </div>
+ 
         <ul class="pump-reasons">
           {% for r in pump.reasons %}
             <li class="{% if r.good %}good{% elif r.bad %}bad{% endif %}">{{ r.text }}</li>
@@ -239,74 +748,253 @@
             <li>Нет специфических условий</li>
           {% endfor %}
         </ul>
+ 
+        {% comment %} Кнопки выбора размера {% endcomment %}
+        {% if pump.verdict != 'not_recommended' %}
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
+          <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+            Выбрать размер:
+          </div>
+ 
+          {% if pump.code == 'RHA' or pump.code == 'RHB' or pump.code == 'RHT' %}
+            {% for item in rh_sizes %}
+            <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}"
+                  style="display:inline-block;margin:2px 2px 2px 0;">
+              {% csrf_token %}
+              <input type="hidden" name="pump_code"    value="{{ pump.code }}">
+              <input type="hidden" name="pump_size"    value="{{ item.size }}">
+              <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}">
+              <button type="submit"
+                class="size-btn {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
+                {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
+                {{ item.size }}
+                <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
+              </button>
+            </form>
+            {% empty %}
+              <span style="font-size:11px;color:var(--muted);">—</span>
+            {% endfor %}
+ 
+          {% elif pump.code == 'TH' %}
+            {% for item in th_sizes %}
+            <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}"
+                  style="display:inline-block;margin:2px 2px 2px 0;">
+              {% csrf_token %}
+              <input type="hidden" name="pump_code"    value="{{ pump.code }}">
+              <input type="hidden" name="pump_size"    value="{{ item.size }}">
+              <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}">
+              <button type="submit"
+                class="size-btn size-btn-th {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
+                {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
+                {{ item.size }}
+                <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
+              </button>
+            </form>
+            {% empty %}
+              <span style="font-size:11px;color:var(--muted);">—</span>
+            {% endfor %}
+          {% endif %}
+ 
+        </div>
+        {% endif %}
+ 
       </div>
       {% endfor %}
     </div>
-
+ 
+    {% comment %} Дерево решений {% endcomment %}
     {% if recommendation.log %}
     <div class="rec2-log-title">Дерево решений</div>
     <div class="rec2-log">
-      {% for line in recommendation.log %}
-        {{ line }}<br>
-      {% endfor %}
+      {% for line in recommendation.log %}{{ line }}<br>{% endfor %}
+    </div>
+    {% endif %}
+ 
+  </div>
+</div>
+{% endif %}
+
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {# БЛОК 2: Расчёт длины цилиндра и удлинителей                    #}
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {% if cylinder_rec and cylinder_rec.has_data %}
+<div class="rec2-block" style="margin-bottom:20px;">
+  <div class="rec2-head">
+    <div class="rec2-head-title">
+      Расчёт длины цилиндра и удлинителей
+      {% if selected_pump_full %} — {{ selected_pump_full }}{% endif %}
+    </div>
+  </div>
+  <div class="rec2-body">
+
+    {% if not selected_pump %}
+    <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">
+      ⚠ Выберите насос в блоке рекомендаций выше для точного расчёта
+    </div>
+    {% endif %}
+
+    <div class="meta-row" style="margin-bottom:16px;">
+      <div class="meta-item">
+        <div class="label">Длина плунжера (П)</div>
+        <div class="value">{{ cylinder_rec.P }} фута — {{ cylinder_rec.plunger_mm }} мм</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ cylinder_rec.plunger_note }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Ход плунжера</div>
+        <div class="value">{{ cylinder_rec.stroke_mm }} мм = {{ cylinder_rec.N_ft }} фут.</div>
+      </div>
+      {% if cylinder_rec.K %}
+      <div class="meta-item">
+        <div class="label">Коэф. К</div>
+        <div class="value">{{ cylinder_rec.K }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Треб. В+У</div>
+        <div class="value">{{ cylinder_rec.required_BU }} фут.</div>
+      </div>
+      {% else %}
+      <div class="meta-item">
+        <div class="label">Ориентировочная В+У</div>
+        <div class="value">{{ cylinder_rec.req_range.0 }}–{{ cylinder_rec.req_range.1 }} фут.</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if cylinder_rec.note %}
+    <div style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;margin-bottom:14px;">
+      {{ cylinder_rec.note }}
+    </div>
+    {% endif %}
+
+    {% if cylinder_rec.results %}
+    <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+      Варианты подбора
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px;">
+      {% for r in cylinder_rec.results %}
+<div class="cyl-variant-card"
+     data-cyl="{{ r.V }}-{{ cylinder_rec.P }}-{{ r.u1 }}-{{ r.u2 }}"
+     style="padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+            transition:all .15s;
+            {% if forloop.first %}outline:2px solid #3b82f6;outline-offset:2px;{% endif %}">
+  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+    Удлинители {{ r.U }} фут. ({{ r.u1 }}' + {{ r.u2 }}')
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+    <span style="padding:6px 12px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;font-size:13px;font-weight:800;color:#166534;">
+      Цилиндр: {{ r.V }}'
+    </span>
+    <span style="padding:6px 12px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;font-size:13px;font-weight:800;color:#1d4ed8;">
+      В+У = {{ r.BU }}'
+    </span>
+  </div>
+  <div style="font-size:12px;color:var(--muted);">
+    Макс. ход: <b>{{ r.stroke_mm }} мм</b>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:monospace;word-break:break-all;">
+    {{ r.designation }}
+  </div>
+</div>
+{% endfor %}
+    </div>
+    <div style="font-size:11px;color:var(--muted);">
+      Формула (Приложение В): В + У = Н + П + К
     </div>
     {% endif %}
 
   </div>
 </div>
-{% if plunger_rec and plunger_rec.has_data %}
+{% endif %}
+
+    
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {# БЛОК 3: Группа посадки плунжера (новый)                        #}
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {% if fit_rec and fit_rec.has_data %}
 <div class="rec2-block" style="margin-bottom:20px;">
   <div class="rec2-head">
-    <div class="rec2-head-title">Подбор плунжера и размеров насоса</div>
+    <div class="rec2-head-title">
+      Группа посадки плунжера — Fit-{{ fit_rec.recommended_fit }} ({{ fit_rec.nominal_mm }} мм)
+    </div>
   </div>
   <div class="rec2-body">
 
-    <div class="meta-row">
+    {% if not selected_pump %}
+    <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">
+      ⚠ Выберите насос выше для точного подбора зазора
+    </div>
+    {% endif %}
 
+    <div class="meta-row" style="margin-bottom:16px;">
       <div class="meta-item">
-        <div class="label">Длина плунжера</div>
-        <div class="value">{{ plunger_rec.plunger_feet }} фута — {{ plunger_rec.plunger_mm }} мм</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ plunger_rec.plunger_note }}</div>
+        <div class="label">Диаметр насоса</div>
+        <div class="value">{{ fit_rec.size_key }} ({{ fit_rec.diam_mm }} мм)</div>
       </div>
-
-      {% if plunger_rec.nkt_sizes %}
-      <div class="meta-item" style="flex:2;">
-        <div class="label">Допустимые размеры насосов — НКТ {{ plunger_rec.nkt_diameter }} мм</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-
-          <div style="flex:1;min-width:160px;padding:10px 12px;border:1px solid #bfdbfe;border-radius:10px;background:#eff6ff;">
-            <div style="font-size:10px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-              Вставной (RH)
-            </div>
-            {% for size in plunger_rec.nkt_sizes.RH %}
-              <span style="display:inline-flex;padding:4px 10px;border-radius:8px;border:1px solid #bfdbfe;background:#fff;font-size:13px;font-weight:800;margin:2px;">
-                {{ size }}
-              </span>
-            {% endfor %}
-          </div>
-
-          <div style="flex:1;min-width:160px;padding:10px 12px;border:1px solid #bbf7d0;border-radius:10px;background:#f0fdf4;">
-            <div style="font-size:10px;font-weight:800;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-              Трубный (ТН)
-            </div>
-            {% for size in plunger_rec.nkt_sizes.TH %}
-              <span style="display:inline-flex;padding:4px 10px;border-radius:8px;border:1px solid #bbf7d0;background:#fff;font-size:13px;font-weight:800;margin:2px;">
-                {{ size }}
-              </span>
-            {% endfor %}
-          </div>
-
-        </div>
+      <div class="meta-item">
+        <div class="label">По табл. 13</div>
+        <div class="value">Fit-{{ fit_rec.base_fit }}</div>
       </div>
-      {% endif %}
+      <div class="meta-item">
+        <div class="label">Рекомендованная</div>
+        <div class="value" style="color:#166534;font-weight:900;">Fit-{{ fit_rec.recommended_fit }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Номин. зазор</div>
+        <div class="value">{{ fit_rec.nominal_mm }} мм</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Диапазон</div>
+        <div class="value">{{ fit_rec.range_min }}–{{ fit_rec.range_max }} мм</div>
+      </div>
+    </div>
 
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      {% for f in fit_rec.allowed_fits %}
+<div class="fit-variant-card"
+     data-fit="{{ f.fit }}"
+     onclick="API.fit='{{ f.fit }}'; renderPanel();
+              document.querySelectorAll('.fit-variant-card').forEach(c=>c.style.outline='');
+              this.style.outline='2px solid #3b82f6'; this.style.outlineOffset='2px';"
+     style="flex:1;min-width:90px;padding:12px 10px;border-radius:12px;text-align:center;cursor:pointer;transition:all .15s;
+       {% if f.is_recommended %}border:2px solid #22c55e;background:#f0fdf4;
+       {% elif f.is_optimal %}border:1px solid #bfdbfe;background:#eff6ff;
+       {% else %}border:1px solid var(--line);background:#fff;{% endif %}">
+  <div style="font-size:13px;font-weight:900;{% if f.is_recommended %}color:#166534;{% endif %}">
+    Fit-{{ f.fit }}{% if f.is_recommended %} ✓{% endif %}
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ f.nominal }} мм</div>
+  <div style="font-size:10px;color:var(--muted);">{{ f.range_min }}–{{ f.range_max }}</div>
+</div>
+{% endfor %}
+    </div>
+
+    {% if fit_rec.reasons %}
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Обоснование</div>
+      {% for r in fit_rec.reasons %}
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;">
+        {% if r.direction == 'up' %}<span style="color:#f59e0b;flex-shrink:0;">↑</span><span style="color:#92400e;">{{ r.text }}</span>
+        {% elif r.direction == 'down' %}<span style="color:#3b82f6;flex-shrink:0;">↓</span><span style="color:#1d4ed8;">{{ r.text }}</span>
+        {% else %}<span style="color:var(--muted);flex-shrink:0;">›</span><span style="color:var(--muted);">{{ r.text }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="font-size:11px;color:var(--muted);padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line);">
+      {{ fit_rec.note }}
     </div>
 
   </div>
 </div>
 {% endif %}
-{% endif %}
-{% if material_rec and material_rec.has_data %}
+
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {# БЛОК 4: Выбор материалов (Таблица 14)                          #}
+    {# ═══════════════════════════════════════════════════════════════ #}
+    {% if material_rec and material_rec.has_data %}
 <div class="rec2-block" style="margin-bottom:20px;">
   <div class="rec2-head">
     <div class="rec2-head-title">Выбор материалов (Таблица 14)</div>
@@ -321,7 +1009,7 @@
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
 
-        <!-- Цилиндр (теперь может быть несколько вариантов) -->
+        <!-- Цилиндр -->
         <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
@@ -340,11 +1028,9 @@
           {% empty %}
           <div style="color:var(--muted);">—</div>
           {% endfor %}
-          {% if material_rec.summary.cyl|length > 1 %}
-          {% endif %}
         </div>
 
-        <!-- Плунжер (теперь может быть несколько вариантов) -->
+        <!-- Плунжер -->
         <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
@@ -365,7 +1051,7 @@
           {% endfor %}
         </div>
 
-        <!-- Клапанная пара (теперь может быть несколько вариантов) -->
+        <!-- Клапанная пара -->
         <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
           <div style="font-size:10px;font-weight:800;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">

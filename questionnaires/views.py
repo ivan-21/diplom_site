@@ -3,7 +3,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django import forms
 from django.db import transaction
-from .services import get_pump_recommendation, get_plunger_recommendation, get_material_recommendation
 from .models import Questionnaire, QuestionnaireStep, Question, Submission, Answer
 
 
@@ -172,8 +171,7 @@ def manager_set_status(request, submission_id):
 def manager_detail(request, submission_id):
     sub = get_object_or_404(Submission, id=submission_id)
     answers = sub.answers.select_related("question").prefetch_related("question__options").all()
-
-    # Собираем словарь slug -> value
+ 
     answers_dict = {}
     for a in answers:
         if a.value_number is not None:
@@ -182,18 +180,111 @@ def manager_detail(request, submission_id):
             answers_dict[a.question.slug] = a.value_bool
         else:
             answers_dict[a.question.slug] = a.value_text
-
+ 
+    from .services import (
+        get_pump_recommendation,
+        get_material_recommendation,
+        get_cylinder_recommendation,
+        get_fit_recommendation,
+    )
+ 
     recommendation = get_pump_recommendation(answers_dict)
-    plunger_rec     = get_plunger_recommendation(answers_dict)
-    material_rec     = get_material_recommendation(answers_dict)
-
+    material_rec   = get_material_recommendation(answers_dict)
+ 
+    # Выбор менеджера из processed_data_json
+    manager_data       = sub.processed_data_json or {}
+    selected_pump      = manager_data.get("selected_pump_code", "")
+    selected_size      = manager_data.get("selected_pump_size", "")
+    selected_nkt       = manager_data.get("selected_nkt", "")
+    selected_pump_full = manager_data.get("selected_pump_full", "")
+ 
+    # Подставляем выбранный насос для расчётов цилиндра и зазора
+    calc_dict = dict(answers_dict)
+    if selected_pump_full:
+        calc_dict["pump_type_full"] = selected_pump_full
+    if selected_size:
+        # "20-125" → "125" для get_fit_recommendation
+        calc_dict["inner_diameter"] = selected_size.split("-")[-1] if "-" in selected_size else selected_size
+ 
+    cylinder_rec = get_cylinder_recommendation(calc_dict)
+    fit_rec      = get_fit_recommendation(calc_dict)
+ 
+    # Все доступные размеры насосов по типу — для кнопок выбора менеджера
+    # Независимо от того указал ли клиент НКТ
+    ALL_SIZES = {
+        "RH": [  # вставные (RHA, RHB, RHT)
+            {"size": "20-106", "nkt": "60.3"},
+            {"size": "20-125", "nkt": "60.3"},
+            {"size": "25-150", "nkt": "73.0"},
+            {"size": "25-175", "nkt": "73.0"},
+            {"size": "30-225", "nkt": "88.9"},
+        ],
+        "TH": [  # трубные
+            {"size": "20-125", "nkt": "60.3"},
+            {"size": "20-175", "nkt": "60.3"},
+            {"size": "25-225", "nkt": "73.0"},
+            {"size": "30-275", "nkt": "88.9"},
+        ],
+    }
+ 
+    # Если клиент указал НКТ — фильтруем размеры по нему
+    # Нормализуем значение НКТ из анкеты (может прийти "60.3", "60,3", "2 3/8" и т.д.)
+    nkt_raw = answers_dict.get("nkt_diameter", "")
+    NKT_MAP = {
+        "60.3": "60.3", "60,3": "60.3", "2 3/8": "60.3", "2-3/8": "60.3",
+        "73.0": "73.0", "73,0": "73.0", "73":    "73.0", "2 7/8": "73.0",
+        "88.9": "88.9", "88,9": "88.9", "88":    "88.9", "3 1/2": "88.9",
+    }
+    nkt_normalized = NKT_MAP.get(str(nkt_raw).strip(), "")
+ 
+    if nkt_normalized:
+        rh_sizes = [s for s in ALL_SIZES["RH"] if s["nkt"] == nkt_normalized]
+        th_sizes = [s for s in ALL_SIZES["TH"] if s["nkt"] == nkt_normalized]
+    else:
+        rh_sizes = ALL_SIZES["RH"]
+        th_sizes = ALL_SIZES["TH"]
+ 
     return render(request, "manager/detail.html", {
-        "sub": sub,
-        "answers": answers,
-        "recommendation": recommendation,
-        "plunger_rec":    plunger_rec,
-        "material_rec":   material_rec,
+        "sub":             sub,
+        "answers":         answers,
+        "recommendation":  recommendation,
+        "material_rec":    material_rec,
+        "cylinder_rec":    cylinder_rec,
+        "fit_rec":         fit_rec,
+        "selected_pump":   selected_pump,
+        "selected_size":   selected_size,
+        "selected_nkt":    selected_nkt,
+        "selected_pump_full": selected_pump_full,
+        "rh_sizes":        rh_sizes,
+        "th_sizes":        th_sizes,
+        "nkt_normalized":  nkt_normalized,
     })
+
+@staff_member_required
+def manager_select_pump(request, submission_id):
+    if request.method == "POST":
+        sub        = get_object_or_404(Submission, id=submission_id)
+        pump_code  = request.POST.get("pump_code", "")   # RHA / RHB / RHT / TH
+        size       = request.POST.get("pump_size", "")   # 20-125
+        nkt        = request.POST.get("nkt_diameter", "") # 60.3
+ 
+        # Полное обозначение для поиска коэффициента К
+        if pump_code in ("RHA", "RHB", "RHT"):
+            pump_type_full = f"{size} {pump_code}M"
+        elif pump_code == "TH":
+            pump_type_full = f"{size} THM"
+        else:
+            pump_type_full = ""
+ 
+        data = sub.processed_data_json or {}
+        data["selected_pump_code"] = pump_code
+        data["selected_pump_size"] = size
+        data["selected_nkt"]       = nkt
+        data["selected_pump_full"] = pump_type_full
+        sub.processed_data_json    = data
+        sub.save()
+ 
+    return redirect("manager_detail", submission_id=submission_id)
 
 def _draft_key(slug: str) -> str:
     return f"draft_q_{slug}"
