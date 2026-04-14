@@ -302,3 +302,7 @@ def _clear_draft(request, slug: str) -> None:
 
 def handbook(request):
     return render(request, "questionnaires/handbook.html")
+
+@staff_member_required
+def schema_view(request):
+    return render(request, "manager/schema.html")

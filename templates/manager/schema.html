@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Схема базы данных{% endblock %}
+
+{% block crumbs %}
+  <div class="crumbs">
+    <a href="/">Главная</a><span class="sep">/</span>
+    <a href="/q/manager/submissions/">Менеджер</a><span class="sep">/</span>
+    <span>Схема БД</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .schema-card {
+    margin-top: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .schema-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .schema-body {
+    padding: 24px;
+    overflow-x: auto;
+  }
+  #erd svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .table-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+  .table-card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .table-card-head {
+    padding: 10px 14px;
+    background: var(--accent2);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .table-card-head .tbl-count {
+    font-size: 11px;
+    opacity: .6;
+    font-weight: 400;
+  }
+  .field-row {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-name { font-weight: 700; flex: 1; }
+  .field-type {
+    font-family: monospace;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--muted);
+    border: 1px solid var(--line);
+  }
+  .badge-pk {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+  .badge-fk {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+  }
+  .badge-idx {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+  }
+  .view-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .12s;
+  }
+  .view-btn.active {
+    border-color: rgba(214,31,44,.35);
+    background: rgba(214,31,44,.06);
+    color: var(--text);
+  }
+</style>
+
+<div class="schema-card">
+  <div class="schema-head">
+    <div>
+      <h1 class="card-title">Схема базы данных</h1>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="showView('diagram', this)">ER-диаграмма</button>
+    </div>
+  </div>
+
+  <div class="schema-body">
+
+    <!-- ER диаграмма -->
+    <div id="view-diagram">
+      <div id="erd">
+        {% load static %}
+        <img src="{% static 'erdiag.png' %}" alt="Схема базы данных" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+      </div>
+      
+    </div>
+
+    
+
+  </div>
+</div>
+
+
+
+<script>
+function showView(view, btn) {
+  document.getElementById('view-diagram').style.display = view === 'diagram' ? 'block' : 'none';
+  document.getElementById('view-tables').style.display  = view === 'tables'  ? 'block' : 'none';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+{% endblock %}

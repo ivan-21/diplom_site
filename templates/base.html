@@ -222,6 +222,7 @@
 
           {% if user.is_staff %}
             <a class="link" href="/q/manager/submissions/">Менеджер</a>
+            <a class="link" href="/q/manager/schema/">Схема БД</a>
           {% endif %}
 
           <form method="post" action="{% url 'logout' %}" style="display:inline;">

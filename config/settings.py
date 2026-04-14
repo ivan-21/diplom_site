@@ -122,7 +122,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# 1. Ссылка, по которой файлы будут доступны в браузере
 STATIC_URL = 'static/'
+
+# 2. Исходная папка (та самая, что на твоем скриншоте)
+STATICFILES_DIRS = [
+    BASE_DIR / "staticfiles", 
+]
+
+# 3. ПАПКА ДЛЯ СБОРА (измени это название!)
+# Добавь в конец названия 'collected' или что угодно другое, 
+# чтобы оно НЕ СОВПАДАЛО с названием папки в корне.
+STATIC_ROOT = BASE_DIR / "staticfiles_collected"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

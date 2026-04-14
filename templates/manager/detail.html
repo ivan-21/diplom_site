@@ -104,6 +104,24 @@
       </div>
       {% endif %}
     </div>
+    <div class="status-actions">
+    <span class="sa-label">Изменить статус:</span>
+    <form method="post" action="{% url 'manager_set_status' submission_id=sub.id %}" style="display:contents;">
+      {% csrf_token %}
+      <button type="submit" name="status" value="in_review"
+        class="status-btn status-btn-review {% if sub.status == 'in_review' %}current{% endif %}">
+        На проверку
+      </button>
+      <button type="submit" name="status" value="processed"
+        class="status-btn status-btn-process {% if sub.status == 'processed' %}current{% endif %}">
+        Обработано
+      </button>
+      <button type="submit" name="status" value="rejected"
+        class="status-btn status-btn-reject {% if sub.status == 'rejected' %}current{% endif %}">
+        Отклонить
+      </button>
+    </form>
+  </div>
     {# ═══════════════════════════════════════════════════════════════ #}
 {# ПАНЕЛЬ: Итоговое обозначение по API (собирается динамически) #}
 {# ═══════════════════════════════════════════════════════════════ #}
@@ -252,9 +270,10 @@
 /* Строка материалов */
 .api-materials {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid #2d3139;
@@ -262,16 +281,20 @@
 .api-mat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: 13px;        
   font-weight: 700;
   transition: all .2s;
+  white-space: nowrap;    
 }
 .api-mat-empty { background:#2d3139; color:#4b5563; border:1px dashed #374151; }
 .api-mat-filled { background:#14532d; color:#86efac; border:1px solid #166534; }
-.api-mat-label { font-size:10px; color:#6b7280; font-weight:400; }
+.api-mat-label { font-size:11px; color:#6b7280; font-weight:400; }  
+.api-mat-empty { background:#2d3139; color:#4b5563; border:1px dashed #374151; }
+.api-mat-filled { background:#14532d; color:#86efac; border:1px solid #166534; }
+.api-mat-label { font-size:12px; color:#6b7280; font-weight:400; }
 
 /* Кнопки в шапке */
 .api-head-btn {
@@ -416,13 +439,13 @@ const API = {
 // Восстанавливаем материалы
 {% if material_rec and material_rec.summary %}
   {% if material_rec.summary.cyl %}
-    API.cylMat = "{{ material_rec.summary.cyl.0.material|truncatechars:6 }}";
+    API.cylMat = "{{ material_rec.summary.cyl.0.material|default:'' }}";
   {% endif %}
   {% if material_rec.summary.plu %}
-    API.pluMat = "{{ material_rec.summary.plu.0.material|truncatechars:6 }}";
+    API.pluMat = "{{ material_rec.summary.plu.0.material|default:'' }}";
   {% endif %}
   {% if material_rec.summary.val %}
-    API.valMat = "{{ material_rec.summary.val.0.material|truncatechars:6 }}";
+    API.valMat = "{{ material_rec.summary.val.0.material|default:'' }}";
   {% endif %}
 {% endif %}
 
@@ -463,15 +486,32 @@ function setPill(id, value, colorClass) {
   }
 }
 
+// Словарь сокращений 
+const matShortNames = {
+    "CR (Угл. сталь + хром)": "CR",
+    "HN (Лег. сталь + азотир.)": "HN",
+    "T (Лег. сталь + напыл.)": "T",
+    "Нержав. сталь SS": "SS",
+    "Кобальтовый сплав ST": "ST",
+};
+
 function setMat(id, label, value) {
   const el = document.getElementById(id);
   if (!el) return;
+  
   if (value) {
-    el.innerHTML = `<span class="api-mat-label">${label}:</span> ${value}`;
+    // 1. Проверяем, есть ли сокращение в словаре
+    // 2. Если нет — оставляем оригинал или обрезаем до 10 символов
+    let shortValue = matShortNames[value] || (value.length > 10 ? value.substring(0, 10) + '.' : value);
+    
+    el.innerHTML = `<span class="api-mat-label">${label}:</span> ${shortValue}`;
     el.className = "api-mat-pill api-mat-filled";
+    // Добавим всплывающую подсказку с полным названием
+    el.title = value; 
   } else {
     el.innerHTML = `<span class="api-mat-label">${label}:</span> ?`;
     el.className = "api-mat-pill api-mat-empty";
+    el.title = "";
   }
 }
 
@@ -1193,23 +1233,6 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   </div>
 
-  <div class="status-actions">
-    <span class="sa-label">Изменить статус:</span>
-    <form method="post" action="{% url 'manager_set_status' submission_id=sub.id %}" style="display:contents;">
-      {% csrf_token %}
-      <button type="submit" name="status" value="in_review"
-        class="status-btn status-btn-review {% if sub.status == 'in_review' %}current{% endif %}">
-        🔍 На проверку
-      </button>
-      <button type="submit" name="status" value="processed"
-        class="status-btn status-btn-process {% if sub.status == 'processed' %}current{% endif %}">
-        ✅ Обработано
-      </button>
-      <button type="submit" name="status" value="rejected"
-        class="status-btn status-btn-reject {% if sub.status == 'rejected' %}current{% endif %}">
-        ✕ Отклонить
-      </button>
-    </form>
-  </div>
+  
 </div>
 {% endblock %}

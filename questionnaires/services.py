@@ -459,7 +459,7 @@ def get_cylinder_recommendation(answers_dict):
     if depth is None and stroke_mm is None:
         return {"has_data": False}
 
-    # ── Длина плунжера П по глубине (перенесено из get_plunger_recommendation) ──
+    # ── Длина плунжера П по глубине ──
     if depth is not None:
         if depth <= 1500:
             P = 4
