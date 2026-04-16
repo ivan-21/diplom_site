@@ -186,10 +186,12 @@ def manager_detail(request, submission_id):
         get_material_recommendation,
         get_cylinder_recommendation,
         get_fit_recommendation,
+        get_flow_recommendation,
     )
  
     recommendation = get_pump_recommendation(answers_dict)
     material_rec   = get_material_recommendation(answers_dict)
+    flow_rec = get_flow_recommendation(answers_dict)
  
     # Выбор менеджера из processed_data_json
     manager_data       = sub.processed_data_json or {}
@@ -206,7 +208,7 @@ def manager_detail(request, submission_id):
         # "20-125" → "125" для get_fit_recommendation
         calc_dict["inner_diameter"] = selected_size.split("-")[-1] if "-" in selected_size else selected_size
  
-    cylinder_rec = get_cylinder_recommendation(calc_dict)
+    cylinder_rec = get_cylinder_recommendation(calc_dict, flow_rec=flow_rec)
     fit_rec      = get_fit_recommendation(calc_dict)
  
     # Все доступные размеры насосов по типу — для кнопок выбора менеджера
@@ -258,6 +260,7 @@ def manager_detail(request, submission_id):
         "rh_sizes":        rh_sizes,
         "th_sizes":        th_sizes,
         "nkt_normalized":  nkt_normalized,
+        "flow_rec": flow_rec,
     })
 
 @staff_member_required

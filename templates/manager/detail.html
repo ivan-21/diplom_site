@@ -697,7 +697,158 @@ document.addEventListener("DOMContentLoaded", () => {
   .rec2-log { margin-top:12px; padding:12px 14px; background:var(--bg); border:1px solid var(--line); border-radius:10px; font-size:11px; color:var(--muted); line-height:2; }
   .rec2-log-title { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
 </style>
- 
+ {% if flow_rec and flow_rec.has_data %}
+<div class="rec2-block" style="margin-bottom:20px;">
+  <div class="rec2-head">
+    <div class="rec2-head-title">
+      {% if flow_rec.overflow %}
+        ⚠ Подача {{ flow_rec.V_required }} м³/сут — превышает возможности стандартного ряда
+      {% else %}
+        Подбор по подаче {{ flow_rec.V_required }} м³/сут
+        — оптимально: размер {{ flow_rec.best.pump.size }},
+          ход {{ flow_rec.opt_stroke }} мм,
+          N = {{ flow_rec.opt_spm }} ход/мин
+      {% endif %}
+    </div>
+  </div>
+
+  {% if flow_rec.overflow %}
+  <div class="rec2-body">
+    <div style="padding:14px 16px;border-radius:12px;border:1px solid #fecdd3;
+                background:#fff1f2;font-size:13px;color:#be123c;">
+      Максимально достижимая подача одним насосом:
+      <b>{{ flow_rec.max_flow }} м³/сут</b>
+      (размер 275, ход 6000 мм, N=15). Рассмотрите параллельную установку.
+    </div>
+  </div>
+
+  {% else %}
+  <div class="rec2-body">
+
+    <!-- Оптимальные параметры -->
+    <div class="meta-row" style="margin-bottom:20px;">
+      <div class="meta-item">
+        <div class="label">Требуемая подача</div>
+        <div class="value">{{ flow_rec.V_required }} м³/сут</div>
+      </div>
+      <div class="meta-item" style="border:1px solid #bbf7d0;background:#f0fdf4;">
+        <div class="label" style="color:#166534;">① Ход плунжера</div>
+        <div class="value" style="color:#166534;">{{ flow_rec.opt_stroke }} мм</div>
+      </div>
+      <div class="meta-item" style="border:1px solid {% if flow_rec.opt_spm > 10 %}#fde68a{% else %}#bbf7d0{% endif %};
+           background:{% if flow_rec.opt_spm > 10 %}#fffbeb{% else %}#f0fdf4{% endif %};">
+        <div class="label">② Число качаний</div>
+        <div class="value">{{ flow_rec.opt_spm }} ход/мин</div>
+      </div>
+      <div class="meta-item" style="border:1px solid {% if flow_rec.best.pump.size != '106' %}#fecdd3{% else %}#bbf7d0{% endif %};
+           background:{% if flow_rec.best.pump.size != '106' %}#fff1f2{% else %}#f0fdf4{% endif %};">
+        <div class="label">③ Мин. диаметр</div>
+        <div class="value">{{ flow_rec.best.pump.size }} ({{ flow_rec.best.pump.d_mm }} мм)</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Расчётная подача</div>
+        <div class="value">{{ flow_rec.best.flow }} м³/сут</div>
+      </div>
+    </div>
+
+    <!-- Три шага логики -->
+    <div style="font-size:11px;font-weight:800;color:var(--muted);
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+      Приоритет форсирования (справочник 2.2)
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+      {% for step in flow_rec.steps %}
+      <div style="padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;
+        {% if step.is_decisive %}
+          border:2px solid #22c55e;background:#f0fdf4;
+        {% elif step.achieved %}
+          border:1px solid #bbf7d0;background:#f0fdf4;opacity:.6;
+        {% else %}
+          border:1px solid var(--line);background:var(--bg);
+        {% endif %}">
+        <div style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+                    font-size:11px;font-weight:900;flex-shrink:0;
+                    {% if step.is_decisive %}background:#22c55e;color:#fff;
+                    {% else %}background:#e5e7eb;color:#9ca3af;{% endif %}">
+          {% if step.is_decisive %}✓{% else %}{{ step.num }}{% endif %}
+        </div>
+        <div style="flex:1;">
+          <span style="font-size:13px;font-weight:800;">{{ step.label }}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:8px;">{{ step.result }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Формула -->
+    <div style="padding:10px 14px;border-radius:10px;background:#1c1f26;
+                font-family:monospace;font-size:13px;color:#86efac;margin-bottom:20px;">
+      V = 72,9 × 0,0001 × D² × H × N<br>
+      <span style="color:#fbbf24;">{{ flow_rec.formula }}</span>
+    </div>
+
+    <!-- Подходящие размеры насосов -->
+    <div style="font-size:11px;font-weight:800;color:var(--muted);
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+      Подходящие размеры насосов при ходе {{ flow_rec.opt_stroke }} мм,
+      N = {{ flow_rec.opt_spm }} ход/мин
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                gap:10px;margin-bottom:20px;">
+      {% for s in flow_rec.suitable_sizes %}
+      <div style="padding:14px;border-radius:12px;
+        {% if s.is_optimal %}
+          border:2px solid #22c55e;background:#f0fdf4;
+        {% else %}
+          border:1px solid var(--line);background:var(--bg);
+        {% endif %}">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:20px;font-weight:900;
+            {% if s.is_optimal %}color:#166534;{% endif %}">
+            {{ s.size }}
+          </span>
+          {% if s.is_optimal %}
+            <span style="font-size:10px;padding:2px 8px;border-radius:999px;
+                         background:#22c55e;color:#fff;font-weight:800;">оптимальный</span>
+          {% endif %}
+        </div>
+
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+          ∅ {{ s.d_mm }} мм · НКТ {{ s.nkt }} мм
+        </div>
+
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">
+          {{ s.flow }} м³/сут
+          <span style="font-size:11px;color:var(--muted);font-weight:400;">
+            (+{{ s.excess_pct }}% к требуемой)
+          </span>
+        </div>
+
+        <!-- Какие типы насосов доступны в этом размере -->
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          {% if s.rh_ok %}
+          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
+                       border:1px solid #bfdbfe;background:#eff6ff;
+                       color:#1d4ed8;font-weight:700;">RH</span>
+          {% endif %}
+          {% if s.th_ok %}
+          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
+                       border:1px solid #bbf7d0;background:#f0fdf4;
+                       color:#166534;font-weight:700;">TH</span>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    
+
+  </div>
+  {% endif %}
+</div>
+{% endif %}
 <div class="rec2-block">
   <div class="rec2-head">
     <div class="rec2-head-title">
@@ -730,13 +881,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
     {% endif %}
  
-    {% comment %} НКТ из анкеты {% endcomment %}
-    {% if nkt_normalized %}
-    <div style="margin-bottom:12px;padding:7px 12px;border-radius:8px;
-                border:1px solid var(--line);background:var(--bg);font-size:12px;color:var(--muted);">
-      Диаметр НКТ из анкеты: <b>{{ nkt_normalized }} мм</b> — показаны подходящие размеры насосов
-    </div>
-    {% endif %}
+
  
     {% comment %} Манжетное крепление {% endcomment %}
     {% if recommendation.manjetnoe %}
@@ -863,7 +1008,7 @@ document.addEventListener("DOMContentLoaded", () => {
   <div class="rec2-head">
     <div class="rec2-head-title">
       Расчёт длины цилиндра и удлинителей
-      {% if selected_pump_full %} — {{ selected_pump_full }}{% endif %}
+      {% if selected_pump_full %} - {{ selected_pump_full }}{% endif %}
     </div>
   </div>
   <div class="rec2-body">
@@ -955,7 +1100,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <div class="rec2-block" style="margin-bottom:20px;">
   <div class="rec2-head">
     <div class="rec2-head-title">
-      Группа посадки плунжера — Fit-{{ fit_rec.recommended_fit }} ({{ fit_rec.nominal_mm }} мм)
+      Группа посадки плунжера 
     </div>
   </div>
   <div class="rec2-body">
@@ -1023,9 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
     {% endif %}
 
-    <div style="font-size:11px;color:var(--muted);padding:8px 10px;border-radius:8px;background:var(--bg);border:1px solid var(--line);">
-      {{ fit_rec.note }}
-    </div>
+
 
   </div>
 </div>
@@ -1174,10 +1317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 {% endif %}
 
-    {% if sub.processed_data_json %}
-      <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Обработанные данные</h3>
-      <pre style="background:#f3f4f6;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;font-size:13px;margin-bottom:16px;">{{ sub.processed_data_json }}</pre>
-    {% endif %}
+    
 
     {% if sub.issues_json %}
       <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Предупреждения</h3>
