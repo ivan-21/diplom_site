@@ -10,46 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<style>
-  .badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:800; }
-  .badge::before { content:''; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .badge-submitted  { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
-  .badge-submitted::before  { background:#3b82f6; }
-  .badge-in_review  { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
-  .badge-in_review::before  { background:#f59e0b; }
-  .badge-processed  { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
-  .badge-processed::before  { background:#22c55e; }
-  .badge-rejected   { background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
-  .badge-rejected::before   { background:#f43f5e; }
 
-  .step { opacity:.4; }
-  .step.done { opacity:1; border-color:rgba(34,197,94,.35) !important; background:rgba(34,197,94,.05) !important; }
-  .step.done .num { background:#22c55e !important; color:#fff !important; }
-  .step.active { opacity:1; }
-  .step.rejected-step { opacity:1; border-color:rgba(244,63,94,.35) !important; background:rgba(244,63,94,.05) !important; }
-  .step.rejected-step .num { background:#f43f5e !important; color:#fff !important; }
-
-  .meta-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-  .meta-item { padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; flex:1; min-width:140px; }
-  .meta-item .label { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
-  .meta-item .value { font-size:14px; font-weight:700; margin-top:4px; }
-
-  table { width:100%; border-collapse:collapse; }
-  thead tr { border-bottom:2px solid var(--line); }
-  thead th { text-align:left; padding:8px 10px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
-  tbody tr { border-bottom:1px solid var(--line); }
-  tbody tr:last-child { border-bottom:none; }
-  tbody tr:hover { background:var(--bg); }
-  tbody td { padding:11px 10px; font-size:14px; }
-
-  .status-actions { display:flex; gap:8px; flex-wrap:wrap; padding:14px 16px; border-top:1px solid var(--line); background:var(--bg); align-items:center; }
-  .status-actions .sa-label { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-right:4px; }
-  .status-btn { padding:9px 14px; border-radius:12px; font-size:13px; font-weight:800; cursor:pointer; transition:all .12s; }
-  .status-btn-review  { border:1px solid #fde68a; background:#fffbeb; color:#92400e; }
-  .status-btn-process { border:1px solid #bbf7d0; background:#f0fdf4; color:#166534; }
-  .status-btn-reject  { border:1px solid #fecdd3; background:#fff1f2; color:#be123c; }
-  .status-btn.current { opacity:.35; cursor:default; pointer-events:none; }
-</style>
 
 <div class="card">
   <div class="card-head">
@@ -122,201 +83,17 @@
       </button>
     </form>
   </div>
-    {# ═══════════════════════════════════════════════════════════════ #}
-{# ПАНЕЛЬ: Итоговое обозначение по API (собирается динамически) #}
-{# ═══════════════════════════════════════════════════════════════ #}
-
-
-
-<style>
-  .api-seg {
-    display:inline-flex; align-items:center;
-    padding:4px 10px; border-radius:8px;
-    font-size:16px; font-weight:900;
-    transition: all .2s;
-  }
-  .api-seg-empty {
-    background:var(--bg); color:var(--muted);
-    border:1px dashed var(--line);
-  }
-  .api-seg-filled {
-    background:#eff6ff; color:#1d4ed8;
-    border:1px solid #bfdbfe;
-  }
-  .api-seg-filled.seg-green {
-    background:#f0fdf4; color:#166534;
-    border:1px solid #bbf7d0;
-  }
-  .api-mat {
-    display:inline-flex; align-items:center;
-    padding:3px 8px; border-radius:6px;
-    font-size:12px; font-weight:700;
-    transition: all .2s;
-  }
-  .api-mat-empty {
-    background:var(--bg); color:var(--muted);
-    border:1px dashed var(--line);
-  }
-  .api-mat-filled {
-    background:#f0fdf4; color:#166534;
-    border:1px solid #bbf7d0;
-  }
-</style>
 
 {# ═══════════════════════════════════════════════════════════════ #}
 {# ПАНЕЛЬ: Итоговое обозначение по API                            #}
 {# ═══════════════════════════════════════════════════════════════ #}
-<style>
-.api-panel {
-  border:1px solid var(--line); border-radius:var(--radius);
-  overflow:hidden; margin-bottom:20px;
-  position:sticky; top:10px; z-index:100;
-  box-shadow:0 4px 32px rgba(0,0,0,.10);
-}
-.api-panel-head {
-  padding:10px 18px; background:var(--accent2); color:#fff;
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-}
-.api-panel-head-title { font-size:13px; font-weight:900; letter-spacing:.3px; }
-.api-panel-body {
-  background:#1c1f26; padding:20px 24px 18px;
-}
 
-/* Полная строка обозначения */
-.api-designation-full {
-  font-family: 'Courier New', monospace;
-  font-size: 26px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 2px;
-  text-align: center;
-  margin-bottom: 20px;
-  min-height: 36px;
-  transition: all .2s;
-}
-.api-designation-full .seg-placeholder { color: #4b5563; }
-
-/* Сегменты */
-.api-segments {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0;
-  flex-wrap: wrap;
-}
-.api-seg-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.api-sep {
-  color: #6b7280;
-  font-size: 50px;
-  font-weight: 400;
-  padding: 0 2px;
-  margin-top: -17px; /* выравнивание по таблетке */
-  align-self: flex-start;
-}
-.api-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-family: 'Courier New', monospace;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  transition: all .25s;
-  border: 2px solid transparent;
-}
-.api-pill-empty {
-  background: #2d3139;
-  color: #4b5563;
-  border-color: #374151;
-}
-.api-pill-filled { border-color: transparent; }
-
-/* Цвета сегментов (как на картинке) */
-.pill-nkt    { background: #c2410c; color: #fff; }  /* оранжево-коричневый */
-.pill-size   { background: #15803d; color: #fff; }  /* зелёный */
-.pill-r      { background: #0369a1; color: #fff; }  /* синий */
-.pill-h      { background: #1d4ed8; color: #fff; }  /* тёмно-синий */
-.pill-lock   { background: #b45309; color: #fff; }  /* золотисто-коричневый */
-.pill-mount  { background: #92400e; color: #fff; }  /* тёмно-коричневый */
-.pill-cyl    { background: #374151; color: #e5e7eb; } /* серый */
-.pill-plun   { background: #374151; color: #e5e7eb; }
-.pill-ext1   { background: #374151; color: #e5e7eb; }
-.pill-ext2   { background: #374151; color: #e5e7eb; }
-
-/* Подписи под таблетками */
-.api-pill-label {
-  font-size: 10px;
-  color: #6b7280;
-  text-align: center;
-  line-height: 1.4;
-  max-width: 72px;
-  min-height: 60px;
-}
-.api-pill-label b {
-  display: block;
-  color: #9ca3af;
-  font-size: 11px;
-  margin-bottom: 2px;
-}
-
-/* Строка материалов */
-.api-materials {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid #2d3139;
-}
-.api-mat-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;        
-  font-weight: 700;
-  transition: all .2s;
-  white-space: nowrap;    
-}
-.api-mat-empty { background:#2d3139; color:#4b5563; border:1px dashed #374151; }
-.api-mat-filled { background:#14532d; color:#86efac; border:1px solid #166534; }
-.api-mat-label { font-size:11px; color:#6b7280; font-weight:400; }  
-.api-mat-empty { background:#2d3139; color:#4b5563; border:1px dashed #374151; }
-.api-mat-filled { background:#14532d; color:#86efac; border:1px solid #166534; }
-.api-mat-label { font-size:12px; color:#6b7280; font-weight:400; }
-
-/* Кнопки в шапке */
-.api-head-btn {
-  padding:4px 12px; border-radius:8px;
-  border:1px solid rgba(255,255,255,.25);
-  background:rgba(255,255,255,.1); color:#fff;
-  font-size:11px; font-weight:700; cursor:pointer;
-  transition:all .15s;
-}
-.api-head-btn:hover { background:rgba(255,255,255,.2); }
-#api-complete-badge {
-  display:none; padding:3px 10px; border-radius:999px;
-  background:rgba(34,197,94,.25); color:#86efac;
-  font-size:11px; font-weight:800;
-}
-</style>
 
 <div class="api-panel">
   <div class="api-panel-head">
     <div class="api-panel-head-title">Структура обозначения насоса по API</div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <span id="api-complete-badge">✓ Готово</span>
+      <span id="api-complete-badge">Готово</span>
       <button class="api-head-btn" onclick="copyApiDesignation()">Копировать</button>
     </div>
   </div>
@@ -627,76 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
     {% if recommendation and recommendation.has_data %}
-<style>
-  .rec2-block { border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
-  .rec2-head { padding:12px 18px; background:var(--accent2); color:#fff; display:flex; align-items:center; gap:10px; }
-  .rec2-head-title { font-size:14px; font-weight:900; }
-  .rec2-body { padding:16px; background:#fff; }
- 
-  .pump-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
- 
-  .pump-card {
-    border:1px solid var(--line); border-radius:12px; padding:16px;
-    background:var(--bg); display:flex; flex-direction:column;
-  }
-  .pump-card.recommended { border-color:rgba(34,197,94,.5); background:rgba(34,197,94,.03); }
-  .pump-card.acceptable  { border-color:rgba(234,179,8,.5);  background:rgba(234,179,8,.03); }
-  .pump-card.not_recommended { border-color:var(--line); opacity:.5; }
- 
-  .pump-verdict {
-    display:inline-flex; align-items:center; gap:5px;
-    font-size:10px; font-weight:800; letter-spacing:.5px;
-    text-transform:uppercase; padding:3px 8px;
-    border-radius:999px; margin-bottom:10px; width:fit-content;
-  }
-  .pump-verdict.recommended { background:rgba(34,197,94,.12); color:#166534; }
-  .pump-verdict.acceptable  { background:rgba(234,179,8,.12);  color:#92400e; }
-  .pump-verdict.not_recommended { background:#f3f4f6; color:var(--muted); }
- 
-  .pump-code { font-size:22px; font-weight:900; margin-bottom:2px; }
-  .pump-name { font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
- 
-  .score-bar { height:3px; background:var(--line); border-radius:2px; margin-bottom:12px; overflow:hidden; }
-  .score-bar-fill { height:100%; border-radius:2px; }
-  .pump-card.recommended .score-bar-fill { background:#22c55e; }
-  .pump-card.acceptable  .score-bar-fill { background:#eab308; }
-  .pump-card.not_recommended .score-bar-fill { background:#d1d5db; }
- 
-  .pump-reasons { list-style:none; padding:0; margin:0 0 auto; }
-  .pump-reasons li {
-    font-size:11px; color:var(--muted); padding:3px 0;
-    display:flex; gap:6px; line-height:1.4;
-    border-bottom:1px solid var(--line);
-  }
-  .pump-reasons li:last-child { border-bottom:none; }
-  .pump-reasons li.good { color:#166534; }
-  .pump-reasons li.good::before { content:'✓'; color:#22c55e; flex-shrink:0; }
-  .pump-reasons li.bad  { color:#be123c; }
-  .pump-reasons li.bad::before  { content:'✗'; color:#f43f5e; flex-shrink:0; }
-  .pump-reasons li:not(.good):not(.bad)::before { content:'›'; color:var(--muted); flex-shrink:0; }
- 
-  .size-btn {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:6px 10px; border-radius:8px;
-    font-size:12px; font-weight:800; cursor:pointer;
-    border:1px solid #bfdbfe; background:#eff6ff; color:#1d4ed8;
-    margin:2px; transition:all .12s;
-  }
-  .size-btn:hover { background:#dbeafe; }
-  .size-btn.size-btn-selected {
-    border:2px solid #22c55e; background:#f0fdf4; color:#166534;
-  }
-  .size-btn-th {
-    border-color:#bbf7d0; background:#f0fdf4; color:#166534;
-  }
-  .size-btn-th:hover { background:#dcfce7; }
-  .size-btn-nkt {
-    font-size:10px; font-weight:400; opacity:.65;
-  }
- 
-  .rec2-log { margin-top:12px; padding:12px 14px; background:var(--bg); border:1px solid var(--line); border-radius:10px; font-size:11px; color:var(--muted); line-height:2; }
-  .rec2-log-title { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-</style>
+
  {% if flow_rec and flow_rec.has_data %}
 <div class="rec2-block" style="margin-bottom:20px;">
   <div class="rec2-head">

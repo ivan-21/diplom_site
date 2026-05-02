@@ -17,7 +17,7 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Настройка статики
-STATIC_URL = '/static/'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
@@ -125,7 +125,7 @@ USE_TZ = True
 # 1. Ссылка, по которой файлы будут доступны в браузере
 STATIC_URL = 'static/'
 
-# 2. Исходная папка (та самая, что на твоем скриншоте)
+# 2. Исходная папка 
 STATICFILES_DIRS = [
     BASE_DIR / "staticfiles", 
 ]
