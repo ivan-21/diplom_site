@@ -1,51 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}Подбор оборудования{% endblock %}</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>
+      {% block title %}
+        Подбор оборудования
+      {% endblock %}
+    </title>
 
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/main.css' %}">
-</head>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  </head>
 
-<body>
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <div class="mark" aria-hidden="true"></div>
-        <div>
-          <div class="brand-title">Подбор оборудования</div>
-          
+  <body>
+    <header class="top">
+      <a class="brand" href="/"><img src="{% static 'img/logo.svg' %}" alt="Ижнефтемаш — Римера" class="brand-logo" /></a>
+
+      <div class="nav-area">
+        <nav class="nav">
+          <a class="link {% if request.path == '/' %}primary{% endif %}" href="/">Главная</a>
+          <a class="link {% if request.path|slice:':3' == '/q/' and 'handbook' not in request.path and 'manager' not in request.path %}primary{% endif %}" href="/q/">Опросники</a>
+          <a class="link {% if '/handbook/' in request.path %}primary{% endif %}" href="/q/handbook/">Справочник</a>
+          {% if user.is_staff %}
+            <a class="link {% if '/manager/' in request.path and 'schema' not in request.path %}primary{% endif %}" href="/q/manager/submissions/">Менеджер</a>
+            <a class="link {% if '/schema/' in request.path %}primary{% endif %}" href="/q/manager/schema/">Схема БД</a>
+          {% endif %}
+        </nav>
+
+        <div style="display:flex; align-items:center; gap:8px;">
+          {% if user.is_authenticated %}
+            <span class="pill">{{ user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" style="display:inline;">
+              {% csrf_token %}
+              <button class="link danger" type="submit">Выйти</button>
+            </form>
+          {% else %}
+            <a class="link" href="/accounts/login/">Войти</a>
+            <a class="link" href="/accounts/signup/">Регистрация</a>
+          {% endif %}
         </div>
       </div>
+    </header>
 
-      <div class="nav">
-        <a class="link" href="/">Главная</a>
-        <a class="link primary" href="/q/">Опросники</a>
-        <a class="link" href="/q/handbook/">Справочник</a>
+    <div class="wrap">
+      {% block crumbs %}
 
-        {% if user.is_authenticated %}
-          <span class="pill">{{ user.username }}</span>
+      {% endblock %}
+      <div class="page-body">
+        {% block content %}
 
-          {% if user.is_staff %}
-            <a class="link" href="/q/manager/submissions/">Менеджер</a>
-            <a class="link" href="/q/manager/schema/">Схема БД</a>
-          {% endif %}
-
-          <form method="post" action="{% url 'logout' %}" style="display:inline;">
-            {% csrf_token %}
-            <button class="link danger" type="submit">Выйти</button>
-          </form>
-        {% else %}
-          <a class="link" href="/accounts/login/">Войти</a>
-          <a class="link" href="/accounts/signup/">Регистрация</a>
-        {% endif %}
+        {% endblock %}
       </div>
     </div>
-
-    {% block crumbs %}{% endblock %}
-    {% block content %}{% endblock %}
-  </div>
-</body>
+  </body>
 </html>

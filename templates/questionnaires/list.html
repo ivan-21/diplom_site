@@ -32,7 +32,7 @@
                 <h2 class="card-title">{{ q.title }}</h2>
                 <div class="card-sub">{{ q.description }}</div>
               </div>
-              <a class="btn primary" href="{% url 'start_questionnaire' slug=q.slug %}">Заполнить →</a>
+              <a class="btn primary" href="{% url 'start_questionnaire' slug=q.slug %}">Заполнить</a>
             </div>
           </div>
         {% empty %}

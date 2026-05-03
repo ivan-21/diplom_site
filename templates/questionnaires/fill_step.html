@@ -56,9 +56,8 @@
     function applyVisibility() {
   const previous = JSON.parse(document.getElementById("draftAnswers").textContent || "{}");
   const rows = document.querySelectorAll(".q-row");
-  const values = { ...previous }; // ← сначала прошлые ответы
+  const values = { ...previous }; 
 
-  // затем перезапишем тем, что есть на текущем шаге (если есть)
   rows.forEach(row => {
     const name = row.dataset.field;
     const input = row.querySelector("input, select, textarea");
@@ -71,7 +70,6 @@
     values[name] = val;
   });
 
-  // дальше твой код зависимостей как был
   rows.forEach(row => {
     const dependsOn = row.dataset.dependsOn;
     const dependsValue = row.dataset.dependsValue;

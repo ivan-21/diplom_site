@@ -8,32 +8,104 @@
 {% endblock %}
 
 {% block content %}
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <h1 class="card-title">Подбор оборудования</h1>
-        <div class="card-sub">Единая система опросников и заявок</div>
+
+  {# ── Блок А: Приветствие ──────────────────────────────────────── #}
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-body" style="display:flex; align-items:center; gap:20px; padding:24px 28px;">
+
+      {# Аватар с инициалами #}
+      <div style="
+        width:48px; height:48px; border-radius:50%; flex-shrink:0;
+        background:rgba(235,86,79,.12);
+        display:flex; align-items:center; justify-content:center;
+        font-family:'Circe',Arial,sans-serif; font-weight:700;
+        font-size:15px; color:var(--rimera-red); letter-spacing:.5px;
+      ">
+        {{ user.get_short_name|default:user.username|slice:":2"|upper }}
       </div>
-      <div class="stepper">
-        <div class="step active"><span class="num">01</span> Выбор опросника</div>
-        <div class="step"><span class="num">02</span> Заполнение</div>
-        <div class="step"><span class="num">03</span> Готово</div>
+
+      {# Текст приветствия #}
+      <div style="flex:1; min-width:0;">
+        <div style="font-family:'Circe',sans-serif; font-weight:700; font-size:18px; color:var(--rimera-grey); margin-bottom:5px;">
+          Добро пожаловать{% if user.get_short_name %}, {{ user.get_short_name }}{% endif %}
+        </div>
+        <div style="font-size:14px; color:var(--muted); line-height:1.5;">
+          Единая система подбора оборудования Rimera Group.
+          Выберите опросник и оформите заявку.
+        </div>
+      </div>
+
+      {# Кнопка и дата #}
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
+        {% if user.is_authenticated %}
+          <a class="btn primary" href="/q/">Открыть опросники</a>
+        {% else %}
+          <a class="btn primary" href="/accounts/login/">Войти</a>
+        {% endif %}
+        <span style="font-size:12px; color:var(--muted);">
+          {% now "j E Y" %}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  {# ── Блок Б: Как это работает ─────────────────────────────────── #}
+  <div class="card">
+    <div class="card-head" style="padding-bottom:16px;">
+      <div>
+        <h2 class="card-title" style="font-size:16px;">Как это работает</h2>
       </div>
     </div>
 
-    <div class="card-body">
-      {% if user.is_authenticated %}
-        <p>Перейдите к списку опросников и заполните заявку.</p>
-        <div class="actions" style="justify-content:flex-start">
-          <a class="btn primary" href="/q/">Открыть опросники →</a>
+    <div class="card-body" style="padding:24px 28px;">
+      <div style="display:flex; gap:0; align-items:stretch;">
+
+        {# Шаг 01 #}
+        <div style="flex:1; display:flex; gap:14px;">
+          <div style="font-family:'Circe',Arial,sans-serif; font-size:30px; font-weight:700; color:var(--rimera-red); line-height:1; flex-shrink:0; width:36px; padding-top:2px;">01</div>
+          <div>
+            
+            <div style="font-family:'Circe',Arial,sans-serif; font-weight:700; font-size:15px; color:var(--rimera-grey); margin-bottom:6px;">Выберите опросник</div>
+            <div style="font-size:14px; color:var(--muted); line-height:1.55;">
+              Откройте список опросников и найдите подходящий тип&nbsp;оборудования —
+              насосы, задвижки, электродвигатели и&nbsp;другие.
+            </div>
+          </div>
         </div>
-      {% else %}
-        <p>Чтобы заполнить опросник, войдите в аккаунт.</p>
-        <div class="actions" style="justify-content:flex-start">
-          <a class="btn primary" href="/accounts/login/">Войти</a>
-          <a class="btn ghost" href="/accounts/signup/">Регистрация</a>
+
+        {# Разделитель #}
+        <div style="width:1px; background:var(--line); margin:0 28px; flex-shrink:0;"></div>
+
+        {# Шаг 02 #}
+        <div style="flex:1; display:flex; gap:14px;">
+          <div style="font-family:'Circe',Arial,sans-serif; font-size:30px; font-weight:700; color:#c8cdd1; line-height:1; flex-shrink:0; width:36px; padding-top:2px;">02</div>
+          <div>
+            <div style="font-family:'Circe',Arial,sans-serif; font-weight:700; font-size:15px; color:var(--rimera-grey); margin-bottom:6px;">Заполните форму</div>
+            <div style="font-size:14px; color:var(--muted); line-height:1.55;">
+              Укажите технические параметры и условия эксплуатации.
+              Незаконченная заявка сохраняется автоматически.
+            </div>
+          </div>
         </div>
-      {% endif %}
+
+        {# Разделитель #}
+        <div style="width:1px; background:var(--line); margin:0 28px; flex-shrink:0;"></div>
+
+        {# Шаг 03 #}
+        <div style="flex:1; display:flex; gap:14px;">
+          <div style="font-family:'Circe',Arial,sans-serif; font-size:30px; font-weight:700; color:#c8cdd1; line-height:1; flex-shrink:0; width:36px; padding-top:2px;">03</div>
+          <div>
+            <div style="font-family:'Circe',Arial,sans-serif; font-weight:700; font-size:15px; color:var(--rimera-grey); margin-bottom:6px;">Заявка отправлена</div>
+            <div style="font-size:14px; color:var(--muted); line-height:1.55;">
+              Менеджер получит заявку автоматически и свяжется
+              с вами для подтверждения деталей.
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
+
 {% endblock %}

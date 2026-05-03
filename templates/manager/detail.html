@@ -1,5 +1,7 @@
-{% extends "base.html" %}
-{% block title %}Заявка #{{ sub.id }}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}
+  Заявка #{{ sub.id }}
+{% endblock %}
 
 {% block crumbs %}
   <div class="crumbs">
@@ -10,186 +12,217 @@
 {% endblock %}
 
 {% block content %}
-
-
-<div class="card">
-  <div class="card-head">
-    <div>
-      <h1 class="card-title">Заявка #{{ sub.id }}</h1>
-      <div class="card-sub">{{ sub.questionnaire.title }} · {{ sub.user.username }}</div>
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1 class="card-title">Заявка #{{ sub.id }}</h1>
+        <div class="card-sub">{{ sub.questionnaire.title }} · {{ sub.user.username }}</div>
+      </div>
+      <div class="stepper">
+        {% if sub.status == 'rejected' %}
+          <div class="step done">
+            <span class="num">✓</span> Получено
+          </div>
+          <div class="step rejected-step">
+            <span class="num">✕</span> Отклонено
+          </div>
+        {% elif sub.status == 'submitted' %}
+          <div class="step active">
+            <span class="num">01</span> Получено
+          </div>
+          <div class="step">
+            <span class="num">02</span> Проверка
+          </div>
+          <div class="step">
+            <span class="num">03</span> Обработка
+          </div>
+        {% elif sub.status == 'in_review' %}
+          <div class="step done">
+            <span class="num">✓</span> Получено
+          </div>
+          <div class="step active">
+            <span class="num">02</span> Проверка
+          </div>
+          <div class="step">
+            <span class="num">03</span> Обработка
+          </div>
+        {% elif sub.status == 'processed' %}
+          <div class="step done">
+            <span class="num">✓</span> Получено
+          </div>
+          <div class="step done">
+            <span class="num">✓</span> Проверка
+          </div>
+          <div class="step active">
+            <span class="num">03</span> Обработка
+          </div>
+        {% endif %}
+      </div>
     </div>
-    <div class="stepper">
-      {% if sub.status == 'rejected' %}
-        <div class="step done"><span class="num">✓</span> Получено</div>
-        <div class="step rejected-step"><span class="num">✕</span> Отклонено</div>
-      {% elif sub.status == 'submitted' %}
-        <div class="step active"><span class="num">01</span> Получено</div>
-        <div class="step"><span class="num">02</span> Проверка</div>
-        <div class="step"><span class="num">03</span> Обработка</div>
-      {% elif sub.status == 'in_review' %}
-        <div class="step done"><span class="num">✓</span> Получено</div>
-        <div class="step active"><span class="num">02</span> Проверка</div>
-        <div class="step"><span class="num">03</span> Обработка</div>
-      {% elif sub.status == 'processed' %}
-        <div class="step done"><span class="num">✓</span> Получено</div>
-        <div class="step done"><span class="num">✓</span> Проверка</div>
-        <div class="step active"><span class="num">03</span> Обработка</div>
-      {% endif %}
-    </div>
-  </div>
 
-  <div class="card-body">
-    <div class="meta-row">
-      <div class="meta-item">
-        <div class="label">Статус</div>
-        <div class="value">
-          {% if sub.status == 'submitted' %}<span class="badge badge-submitted">Отправлено</span>
-          {% elif sub.status == 'in_review' %}<span class="badge badge-in_review">На проверке</span>
-          {% elif sub.status == 'processed' %}<span class="badge badge-processed">Обработано</span>
-          {% elif sub.status == 'rejected' %}<span class="badge badge-rejected">Отклонено</span>
-          {% endif %}
+    <div class="card-body">
+      <div class="meta-row">
+        <div class="meta-item">
+          <div class="label">Статус</div>
+          <div class="value">
+            {% if sub.status == 'submitted' %}
+              <span class="badge badge-submitted">Отправлено</span>
+            {% elif sub.status == 'in_review' %}
+              <span class="badge badge-in_review">На проверке</span>
+            {% elif sub.status == 'processed' %}
+              <span class="badge badge-processed">Обработано</span>
+            {% elif sub.status == 'rejected' %}
+              <span class="badge badge-rejected">Отклонено</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Клиент</div>
+          <div class="value">{{ sub.user.username }}</div>
+        </div>
+        <div class="meta-item">
+          <div class="label">Создано</div>
+          <div class="value">{{ sub.created_at|date:'d.m.Y H:i' }}</div>
+        </div>
+        {% if sub.submitted_at %}
+          <div class="meta-item">
+            <div class="label">Отправлено</div>
+            <div class="value">{{ sub.submitted_at|date:'d.m.Y H:i' }}</div>
+          </div>
+        {% endif %}
+      </div>
+      <div class="status-actions">
+        <span class="sa-label">Изменить статус:</span>
+        <form method="post" action="{% url 'manager_set_status' submission_id=sub.id %}" style="display:contents;">
+          {% csrf_token %}
+          <button type="submit" name="status" value="in_review" class="status-btn status-btn-review {% if sub.status == 'in_review' %}current{% endif %}">На проверку</button>
+          <button type="submit" name="status" value="processed" class="status-btn status-btn-process {% if sub.status == 'processed' %}current{% endif %}">Обработано</button>
+          <button type="submit" name="status" value="rejected" class="status-btn status-btn-reject {% if sub.status == 'rejected' %}current{% endif %}">Отклонить</button>
+        </form>
+      </div>
+
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {# ПАНЕЛЬ: Итоговое обозначение по API #}
+      {# ═══════════════════════════════════════════════════════════════ #}
+
+      <div class="api-panel">
+        <div class="api-panel-head">
+          <div class="api-panel-head-title">Структура обозначения насоса по API</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="api-complete-badge">Готово</span>
+            <button class="api-head-btn" onclick="copyApiDesignation()">Копировать</button>
+          </div>
+        </div>
+
+        <div class="api-panel-body">
+          <!-- Полная строка -->
+          <div class="api-designation-full" id="api-full-line">—</div>
+
+          <!-- Сегменты с таблетками -->
+          <div class="api-segments">
+            <!-- НКТ -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-nkt" id="seg-nkt">?</div>
+              <div class="api-pill-label">
+                <b>НКТ</b>20 = 60,3 мм<br />25 = 73,0 мм<br />30 = 88,9 мм
+              </div>
+            </div>
+            <div class="api-sep">-</div>
+
+            <!-- Диаметр -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-size" id="seg-size">???</div>
+              <div class="api-pill-label">
+                <b>Внутр. диаметр</b>106 = 27,0 мм<br />125 = 31,8 мм<br />150 = 38,1 мм<br />175 = 44,5 мм<br />225 = 57,2 мм<br />275 = 69,9 мм
+              </div>
+            </div>
+            <div class="api-sep" style="margin-top:10px;"></div>
+            <div class="api-sep">-</div>
+
+            <!-- R/T -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-r" id="seg-r">?</div>
+              <div class="api-pill-label">
+                <b>Тип насоса</b>R = вставной<br />T = трубный
+              </div>
+            </div>
+
+            <!-- H/W -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-h" id="seg-h">?</div>
+              <div class="api-pill-label">
+                <b>Тип цилиндра</b>H = толстост.
+              </div>
+            </div>
+
+            <!-- A/B/T -->
+            {% if selected_pump != 'TH' %}
+              <div class="api-seg-wrap">
+                <div class="api-pill api-pill-empty pill-lock" id="seg-lock">?</div>
+                <div class="api-pill-label">
+                  <b>Замок</b>A = верхнее<br />B = нижнее<br />T = нижн. подв.
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- M/C -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-mount" id="seg-mount">?</div>
+              <div class="api-pill-label">
+                <b>Крепление</b>M = механич.<br />C = манжетное
+              </div>
+            </div>
+            <div class="api-sep"></div>
+            <div class="api-sep">-</div>
+
+            <!-- Длина цилиндра -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-cyl" id="seg-cyl">?</div>
+              <div class="api-pill-label">
+                <b>Длина цилиндра</b>футы
+              </div>
+            </div>
+            <div class="api-sep">-</div>
+
+            <!-- Длина плунжера -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-plun" id="seg-plun">?</div>
+              <div class="api-pill-label">
+                <b>Длина плунжера</b>футы
+              </div>
+            </div>
+            <div class="api-sep">-</div>
+
+            <!-- Удлинитель 1 -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-ext1" id="seg-ext1">?</div>
+              <div class="api-pill-label">
+                <b>Верхний удл.</b>футы
+              </div>
+            </div>
+            <div class="api-sep">-</div>
+
+            <!-- Удлинитель 2 -->
+            <div class="api-seg-wrap">
+              <div class="api-pill api-pill-empty pill-ext2" id="seg-ext2">?</div>
+              <div class="api-pill-label">
+                <b>Нижний удл.</b>футы
+              </div>
+            </div>
+          </div>
+
+          <!-- Материалы -->
+          <div class="api-materials">
+            <span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;align-self:center;">Исполнение:</span>
+            <span class="api-mat-pill api-mat-empty" id="mat-cyl"><span class="api-mat-label">Цилиндр:</span> ?</span>
+            <span class="api-mat-pill api-mat-empty" id="mat-plu"><span class="api-mat-label">Плунжер:</span> ?</span>
+            <span class="api-mat-pill api-mat-empty" id="mat-val"><span class="api-mat-label">Клапаны:</span> ?</span>
+            <span class="api-mat-pill api-mat-empty" id="mat-fit"><span class="api-mat-label">Зазор:</span> ?</span>
+          </div>
         </div>
       </div>
-      <div class="meta-item">
-        <div class="label">Клиент</div>
-        <div class="value">{{ sub.user.username }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Создано</div>
-        <div class="value">{{ sub.created_at|date:"d.m.Y H:i" }}</div>
-      </div>
-      {% if sub.submitted_at %}
-      <div class="meta-item">
-        <div class="label">Отправлено</div>
-        <div class="value">{{ sub.submitted_at|date:"d.m.Y H:i" }}</div>
-      </div>
-      {% endif %}
-    </div>
-    <div class="status-actions">
-    <span class="sa-label">Изменить статус:</span>
-    <form method="post" action="{% url 'manager_set_status' submission_id=sub.id %}" style="display:contents;">
-      {% csrf_token %}
-      <button type="submit" name="status" value="in_review"
-        class="status-btn status-btn-review {% if sub.status == 'in_review' %}current{% endif %}">
-        На проверку
-      </button>
-      <button type="submit" name="status" value="processed"
-        class="status-btn status-btn-process {% if sub.status == 'processed' %}current{% endif %}">
-        Обработано
-      </button>
-      <button type="submit" name="status" value="rejected"
-        class="status-btn status-btn-reject {% if sub.status == 'rejected' %}current{% endif %}">
-        Отклонить
-      </button>
-    </form>
-  </div>
 
-{# ═══════════════════════════════════════════════════════════════ #}
-{# ПАНЕЛЬ: Итоговое обозначение по API                            #}
-{# ═══════════════════════════════════════════════════════════════ #}
-
-
-<div class="api-panel">
-  <div class="api-panel-head">
-    <div class="api-panel-head-title">Структура обозначения насоса по API</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span id="api-complete-badge">Готово</span>
-      <button class="api-head-btn" onclick="copyApiDesignation()">Копировать</button>
-    </div>
-  </div>
-
-  <div class="api-panel-body">
-
-    <!-- Полная строка -->
-    <div class="api-designation-full" id="api-full-line">—</div>
-
-    <!-- Сегменты с таблетками -->
-    <div class="api-segments">
-
-      <!-- НКТ -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-nkt" id="seg-nkt">?</div>
-        <div class="api-pill-label"><b>НКТ</b>20 = 60,3 мм<br>25 = 73,0 мм<br>30 = 88,9 мм</div>
-      </div>
-      <div class="api-sep">-</div>
-
-      <!-- Диаметр -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-size" id="seg-size">???</div>
-        <div class="api-pill-label"><b>Внутр. диаметр</b>106 = 27,0 мм<br>125 = 31,8 мм<br>150 = 38,1 мм<br>175 = 44,5 мм<br>225 = 57,2 мм<br>275 = 69,9 мм</div>
-      </div>
-      <div class="api-sep" style="margin-top:10px;"> </div>
-      <div class="api-sep">-</div>
-
-      <!-- R/T -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-r" id="seg-r">?</div>
-        <div class="api-pill-label"><b>Тип насоса</b>R = вставной<br>T = трубный</div>
-      </div>
-
-      <!-- H/W -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-h" id="seg-h">?</div>
-        <div class="api-pill-label"><b>Тип цилиндра</b>H = толстост.</div>
-      </div>
-
-      <!-- A/B/T -->
-       {% if selected_pump != "TH"%}
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-lock" id="seg-lock">?</div>
-        <div class="api-pill-label"><b>Замок</b>A = верхнее<br>B = нижнее<br>T = нижн. подв.</div>
-      </div>{% endif %}
-
-      <!-- M/C -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-mount" id="seg-mount">?</div>
-        <div class="api-pill-label"><b>Крепление</b>M = механич.<br>C = манжетное</div>
-      </div>
-      <div class="api-sep">  </div>
-      <div class="api-sep">-</div>
-
-      <!-- Длина цилиндра -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-cyl" id="seg-cyl">?</div>
-        <div class="api-pill-label"><b>Длина цилиндра</b>футы</div>
-      </div>
-      <div class="api-sep">-</div>
-
-      <!-- Длина плунжера -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-plun" id="seg-plun">?</div>
-        <div class="api-pill-label"><b>Длина плунжера</b>футы</div>
-      </div>
-      <div class="api-sep">-</div>
-
-      <!-- Удлинитель 1 -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-ext1" id="seg-ext1">?</div>
-        <div class="api-pill-label"><b>Верхний удл.</b>футы</div>
-      </div>
-      <div class="api-sep">-</div>
-
-      <!-- Удлинитель 2 -->
-      <div class="api-seg-wrap">
-        <div class="api-pill api-pill-empty pill-ext2" id="seg-ext2">?</div>
-        <div class="api-pill-label"><b>Нижний удл.</b>футы</div>
-      </div>
-
-    </div>
-
-    <!-- Материалы -->
-    <div class="api-materials">
-      <span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;align-self:center;">Исполнение:</span>
-      <span class="api-mat-pill api-mat-empty" id="mat-cyl"><span class="api-mat-label">Цилиндр:</span> ?</span>
-      <span class="api-mat-pill api-mat-empty" id="mat-plu"><span class="api-mat-label">Плунжер:</span> ?</span>
-      <span class="api-mat-pill api-mat-empty" id="mat-val"><span class="api-mat-label">Клапаны:</span> ?</span>
-      <span class="api-mat-pill api-mat-empty" id="mat-fit"><span class="api-mat-label">Зазор:</span> ?</span>
-    </div>
-
-  </div>
-</div>
-
-<script>
+      <script>
 // ── Начальное состояние из Django-контекста ───────────────────────
 const API = {
   nkt:      "{{ selected_nkt|default:'' }}",
@@ -206,7 +239,6 @@ const API = {
   valMat:   "",
 };
 
-// Восстанавливаем первый вариант цилиндра как дефолт
 {% if cylinder_rec and cylinder_rec.results %}
   API.cylLen = "{{ cylinder_rec.results.0.V }}";
   API.ext1   = "{{ cylinder_rec.results.0.u1 }}";
@@ -297,8 +329,6 @@ function renderPanel() {
   const nktNum = nktPrefix(API.size);
   const innerSize = API.size ? API.size.split("-")[1] : "";
 
-  // Проверяем тип насоса: T = трубный (TH), R = вставной (RH)
-  // В вашей версии была логика isTH = tc.r !== "T", оставляем её, если она работает корректно
   const isTH = tc.r !== "T";
 
   setPill("seg-nkt",   nktNum,      "pill-nkt");
@@ -319,30 +349,28 @@ function renderPanel() {
   setMat("mat-val", "Клапаны", API.valMat);
   setMat("mat-fit", "Зазор",   API.fit ? "Fit-" + API.fit : "");
 
-  // Обработка правой части (длины): убираем пробелы, чтобы "1, 0" превратилось в "1,0"
   const cylPart = [API.cylLen, API.plunLen, API.ext1, API.ext2]
     .map(v => (v ? v.toString().replace(/\s/g, "") : "?"))
     .join("-");
 
   const fullLine = document.getElementById("api-full-line");
 
-  if (API.size || API.typeFull) {
+if (API.size || API.typeFull) {
     const lockSpan = isTH 
-      ? `<span style="color:#fbbf24">${tc.lock || "?"}</span>` 
+      ? `<span class="seg-lock">${tc.lock || "?"}</span>` 
       : "";
 
-    // Формируем строку с дефисами вместо пробелов вокруг блока типа насоса
     fullLine.innerHTML =
-      `<span style="color:#ef4444">${nktNum || "?"}</span>` +
-      `<span style="color:#9ca3af">-</span>` +
-      `<span style="color:#34d399">${innerSize || "???"}</span>` +
-      `<span style="color:#9ca3af">-</span>` + // Черточка перед THM
-      `<span style="color:#60a5fa">${tc.r || "?"}</span>` +
-      `<span style="color:#818cf8">${tc.h || "?"}</span>` +
+      `<span class="seg-nkt">${nktNum || "?"}</span>` +
+      `<span class="seg-sep">-</span>` +
+      `<span class="seg-size">${innerSize || "???"}</span>` +
+      `<span class="seg-sep">-</span>` +
+      `<span class="seg-r">${tc.r || "?"}</span>` +
+      `<span class="seg-h">${tc.h || "?"}</span>` +
       lockSpan + 
-      `<span style="color:#d97706">${tc.mount || "?"}</span>` +
-      `<span style="color:#9ca3af">-</span>` + // Черточка после THM
-      `<span style="color:#9ca3af">${cylPart}</span>`;
+      `<span class="seg-mount">${tc.mount || "?"}</span>` +
+      `<span class="seg-sep">-</span>` +
+      `<span class="seg-cyl">${cylPart}</span>`;
   } else {
     fullLine.textContent = "—";
   }
@@ -403,684 +431,647 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-    {% if recommendation and recommendation.has_data %}
+      {% if recommendation and recommendation.has_data %}
+        {% if flow_rec and flow_rec.has_data %}
+          <div class="rec2-block" style="margin-bottom:20px;">
+            <div class="rec2-head">
+              <div class="rec2-head-title">
+                {% if flow_rec.overflow %}
+                  ⚠ Подача {{ flow_rec.V_required }} м³/сут — превышает возможности стандартного ряда
+                {% else %}
+                  Подбор по подаче {{ flow_rec.V_required }} м³/сут — оптимально: размер {{ flow_rec.best.pump.size }}, ход {{ flow_rec.opt_stroke }} мм, N = {{ flow_rec.opt_spm }} ход/мин
+                {% endif %}
+              </div>
+            </div>
 
- {% if flow_rec and flow_rec.has_data %}
-<div class="rec2-block" style="margin-bottom:20px;">
-  <div class="rec2-head">
-    <div class="rec2-head-title">
-      {% if flow_rec.overflow %}
-        ⚠ Подача {{ flow_rec.V_required }} м³/сут — превышает возможности стандартного ряда
-      {% else %}
-        Подбор по подаче {{ flow_rec.V_required }} м³/сут
-        — оптимально: размер {{ flow_rec.best.pump.size }},
-          ход {{ flow_rec.opt_stroke }} мм,
-          N = {{ flow_rec.opt_spm }} ход/мин
-      {% endif %}
-    </div>
-  </div>
-
-  {% if flow_rec.overflow %}
-  <div class="rec2-body">
-    <div style="padding:14px 16px;border-radius:12px;border:1px solid #fecdd3;
+            {% if flow_rec.overflow %}
+              <div class="rec2-body">
+                <div style="padding:14px 16px;border-radius:12px;border:1px solid #fecdd3;
                 background:#fff1f2;font-size:13px;color:#be123c;">
-      Максимально достижимая подача одним насосом:
-      <b>{{ flow_rec.max_flow }} м³/сут</b>
-      (размер 275, ход 6000 мм, N=15). Рассмотрите параллельную установку.
-    </div>
-  </div>
+                  Максимально достижимая подача одним насосом:
+                  <b>{{ flow_rec.max_flow }} м³/сут</b>
+                </div>
+              </div>
+            {% else %}
+              <div class="rec2-body">
+                <!-- Оптимальные параметры -->
+                <div class="meta-row" style="margin-bottom:20px;">
+                  <div class="meta-item">
+                    <div class="label">Требуемая подача</div>
+                    <div class="value">{{ flow_rec.V_required }} м³/сут</div>
+                  </div>
+                  <div class="meta-item" style="border:1px solid #bbf7d0;background:#f0fdf4;">
+                    <div class="label" style="color:#166534;">1. Ход плунжера</div>
+                    <div class="value" style="color:#166534;">{{ flow_rec.opt_stroke }} мм</div>
+                  </div>
+                  <div class="meta-item"
+                    style="border:1px solid {% if flow_rec.opt_spm > 10 %}
+                      #fde68a
+                    {% else %}
+                      #bbf7d0
+                    {% endif %};
+           background:{% if flow_rec.opt_spm > 10 %}
+                      #fffbeb
+                    {% else %}
+                      #f0fdf4
+                    {% endif %};">
+                    <div class="label">2. Число качаний</div>
+                    <div class="value">{{ flow_rec.opt_spm }} ход/мин</div>
+                  </div>
+                  <div class="meta-item"
+                    style="border:1px solid {% if flow_rec.best.pump.size != '106' %}
+                      #fecdd3
+                    {% else %}
+                      #bbf7d0
+                    {% endif %};
+           background:{% if flow_rec.best.pump.size != '106' %}
+                      #fff1f2
+                    {% else %}
+                      #f0fdf4
+                    {% endif %};">
+                    <div class="label">3. Мин. диаметр</div>
+                    <div class="value">{{ flow_rec.best.pump.size }} ({{ flow_rec.best.pump.d_mm }} мм)</div>
+                  </div>
+                  <div class="meta-item">
+                    <div class="label">Расчётная подача</div>
+                    <div class="value">{{ flow_rec.best.flow }} м³/сут</div>
+                  </div>
+                </div>
 
-  {% else %}
-  <div class="rec2-body">
-
-    <!-- Оптимальные параметры -->
-    <div class="meta-row" style="margin-bottom:20px;">
-      <div class="meta-item">
-        <div class="label">Требуемая подача</div>
-        <div class="value">{{ flow_rec.V_required }} м³/сут</div>
-      </div>
-      <div class="meta-item" style="border:1px solid #bbf7d0;background:#f0fdf4;">
-        <div class="label" style="color:#166534;">① Ход плунжера</div>
-        <div class="value" style="color:#166534;">{{ flow_rec.opt_stroke }} мм</div>
-      </div>
-      <div class="meta-item" style="border:1px solid {% if flow_rec.opt_spm > 10 %}#fde68a{% else %}#bbf7d0{% endif %};
-           background:{% if flow_rec.opt_spm > 10 %}#fffbeb{% else %}#f0fdf4{% endif %};">
-        <div class="label">② Число качаний</div>
-        <div class="value">{{ flow_rec.opt_spm }} ход/мин</div>
-      </div>
-      <div class="meta-item" style="border:1px solid {% if flow_rec.best.pump.size != '106' %}#fecdd3{% else %}#bbf7d0{% endif %};
-           background:{% if flow_rec.best.pump.size != '106' %}#fff1f2{% else %}#f0fdf4{% endif %};">
-        <div class="label">③ Мин. диаметр</div>
-        <div class="value">{{ flow_rec.best.pump.size }} ({{ flow_rec.best.pump.d_mm }} мм)</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Расчётная подача</div>
-        <div class="value">{{ flow_rec.best.flow }} м³/сут</div>
-      </div>
-    </div>
-
-    <!-- Три шага логики -->
-    <div style="font-size:11px;font-weight:800;color:var(--muted);
-                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-      Приоритет форсирования (справочник 2.2)
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
-      {% for step in flow_rec.steps %}
-      <div style="padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;
+                <!-- Три шага логики -->
+                <div style="font-size:11px;font-weight:800;color:var(--muted);
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Приоритет форсирования (справочник 2.2)</div>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+                  {% for step in flow_rec.steps %}
+                    <div style="padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;
         {% if step.is_decisive %}
+                        
           border:2px solid #22c55e;background:#f0fdf4;
-        {% elif step.achieved %}
+
+                      {% elif step.achieved %}
+                        
           border:1px solid #bbf7d0;background:#f0fdf4;opacity:.6;
-        {% else %}
+
+                      {% else %}
+                        
           border:1px solid var(--line);background:var(--bg);
-        {% endif %}">
-        <div style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+
+                      {% endif %}">
+                      <div style="width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
                     font-size:11px;font-weight:900;flex-shrink:0;
-                    {% if step.is_decisive %}background:#22c55e;color:#fff;
-                    {% else %}background:#e5e7eb;color:#9ca3af;{% endif %}">
-          {% if step.is_decisive %}✓{% else %}{{ step.num }}{% endif %}
-        </div>
-        <div style="flex:1;">
-          <span style="font-size:13px;font-weight:800;">{{ step.label }}</span>
-          <span style="font-size:12px;color:var(--muted);margin-left:8px;">{{ step.result }}</span>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
+                    {% if step.is_decisive %}
+                          background:#22c55e;color:#fff;
 
-    <!-- Формула -->
-    <div style="padding:10px 14px;border-radius:10px;background:#1c1f26;
+                        {% else %}
+                          background:#e5e7eb;color:#9ca3af;
+                        {% endif %}">
+                        {% if step.is_decisive %}
+                          ✓
+                        {% else %}
+                          {{ step.num }}
+                        {% endif %}
+                      </div>
+                      <div style="flex:1;">
+                        <span style="font-size:13px;font-weight:800;">{{ step.label }}</span>
+                        <span style="font-size:12px;color:var(--muted);margin-left:8px;">{{ step.result }}</span>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <!-- Формула -->
+                <div style="padding:10px 14px;border-radius:10px;background:#1c1f26;
                 font-family:monospace;font-size:13px;color:#86efac;margin-bottom:20px;">
-      V = 72,9 × 0,0001 × D² × H × N<br>
-      <span style="color:#fbbf24;">{{ flow_rec.formula }}</span>
-    </div>
+                  V = 72,9 × 0,0001 × D² × H × N<br />
+                  <span style="color:#fbbf24;">{{ flow_rec.formula }}</span>
+                </div>
 
-    <!-- Подходящие размеры насосов -->
-    <div style="font-size:11px;font-weight:800;color:var(--muted);
-                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-      Подходящие размеры насосов при ходе {{ flow_rec.opt_stroke }} мм,
-      N = {{ flow_rec.opt_spm }} ход/мин
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                <!-- Подходящие размеры насосов -->
+                <div style="font-size:11px;font-weight:800;color:var(--muted);
+                text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Подходящие размеры насосов при ходе {{ flow_rec.opt_stroke }} мм, N = {{ flow_rec.opt_spm }} ход/мин</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
                 gap:10px;margin-bottom:20px;">
-      {% for s in flow_rec.suitable_sizes %}
-      <div style="padding:14px;border-radius:12px;
+                  {% for s in flow_rec.suitable_sizes %}
+                    <div style="padding:14px;border-radius:12px;
         {% if s.is_optimal %}
+                        
           border:2px solid #22c55e;background:#f0fdf4;
-        {% else %}
+
+                      {% else %}
+                        
           border:1px solid var(--line);background:var(--bg);
-        {% endif %}">
 
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:20px;font-weight:900;
-            {% if s.is_optimal %}color:#166534;{% endif %}">
-            {{ s.size }}
-          </span>
-          {% if s.is_optimal %}
-            <span style="font-size:10px;padding:2px 8px;border-radius:999px;
+                      {% endif %}">
+                      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <span style="font-size:20px;font-weight:900;
+            {% if s.is_optimal %}color:#166534;{% endif %}">{{ s.size }}</span>
+                        {% if s.is_optimal %}
+                          <span style="font-size:10px;padding:2px 8px;border-radius:999px;
                          background:#22c55e;color:#fff;font-weight:800;">оптимальный</span>
-          {% endif %}
-        </div>
+                        {% endif %}
+                      </div>
 
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
-          ∅ {{ s.d_mm }} мм · НКТ {{ s.nkt }} мм
-        </div>
+                      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">∅ {{ s.d_mm }} мм · НКТ {{ s.nkt }} мм</div>
 
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">
-          {{ s.flow }} м³/сут
-          <span style="font-size:11px;color:var(--muted);font-weight:400;">
-            (+{{ s.excess_pct }}% к требуемой)
-          </span>
-        </div>
+                      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">
+                        {{ s.flow }} м³/сут
+                        <span style="font-size:11px;color:var(--muted);font-weight:400;">(+{{ s.excess_pct }}% к требуемой)</span>
+                      </div>
 
-        <!-- Какие типы насосов доступны в этом размере -->
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          {% if s.rh_ok %}
-          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
+                      <!-- Какие типы насосов доступны в этом размере -->
+                      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        {% if s.rh_ok %}
+                          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
                        border:1px solid #bfdbfe;background:#eff6ff;
                        color:#1d4ed8;font-weight:700;">RH</span>
-          {% endif %}
-          {% if s.th_ok %}
-          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
+                        {% endif %}
+                        {% if s.th_ok %}
+                          <span style="font-size:10px;padding:2px 7px;border-radius:6px;
                        border:1px solid #bbf7d0;background:#f0fdf4;
                        color:#166534;font-weight:700;">TH</span>
-          {% endif %}
-        </div>
-
-      </div>
-      {% endfor %}
-    </div>
-
-    
-
-  </div>
-  {% endif %}
-</div>
-{% endif %}
-<div class="rec2-block">
-  <div class="rec2-head">
-    <div class="rec2-head-title">
-      Рекомендация по подбору насоса
-      {% if recommendation.best %} — {{ recommendation.best.code }}: {{ recommendation.best.name }}{% endif %}
-    </div>
-  </div>
-  <div class="rec2-body">
- 
-    {% comment %} Выбор менеджера {% endcomment %}
-    {% if selected_pump %}
-    <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+        <div class="rec2-block">
+          <div class="rec2-head">
+            <div class="rec2-head-title">
+              Рекомендация по подбору насоса{% if recommendation.best %}
+                — {{ recommendation.best.code }}: {{ recommendation.best.name }}
+              {% endif %}
+            </div>
+          </div>
+          <div class="rec2-body">
+            {% comment %}Выбор менеджера{% endcomment %}
+            {% if selected_pump %}
+              <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;
                 border:1px solid #bbf7d0;background:#f0fdf4;
                 display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <span style="font-size:13px;font-weight:800;color:#166534;">✓ Выбрано менеджером:</span>
-      <span style="font-size:14px;font-weight:900;color:#166534;">{{ selected_pump_full }}</span>
-      {% if selected_nkt %}
-        <span style="font-size:12px;color:#166534;opacity:.8;">· НКТ {{ selected_nkt }} мм</span>
-      {% endif %}
-      <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="margin-left:auto;">
-        {% csrf_token %}
-        <input type="hidden" name="pump_code" value="">
-        <input type="hidden" name="pump_size" value="">
-        <input type="hidden" name="nkt_diameter" value="">
-        <button type="submit" style="padding:5px 10px;border-radius:8px;border:1px solid var(--line);
-                background:#fff;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">
-          Сбросить
-        </button>
-      </form>
-    </div>
-    {% endif %}
- 
+                <span style="font-size:13px;font-weight:800;color:#166534;">✓ Выбрано менеджером:</span>
+                <span style="font-size:14px;font-weight:900;color:#166534;">{{ selected_pump_full }}</span>
+                {% if selected_nkt %}
+                  <span style="font-size:12px;color:#166534;opacity:.8;">· НКТ {{ selected_nkt }} мм</span>
+                {% endif %}
+                <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="margin-left:auto;">
+                  {% csrf_token %}
+                  <input type="hidden" name="pump_code" value="" />
+                  <input type="hidden" name="pump_size" value="" />
+                  <input type="hidden" name="nkt_diameter" value="" />
+                  <button type="submit" style="padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+                background:#fff;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">Сбросить</button>
+                </form>
+              </div>
+            {% endif %}
 
- 
-    {% comment %} Манжетное крепление {% endcomment %}
-    {% if recommendation.manjetnoe %}
-      {% with best=recommendation.best %}
-        {% if best.code == 'RHA' or best.code == 'RHB' %}
-        <div style="margin-bottom:14px;padding:14px 16px;border-radius:12px;
+            {% comment %}Манжетное крепление{% endcomment %}
+            {% if recommendation.manjetnoe %}
+              {% with best=recommendation.best %}
+                {% if best.code == 'RHA' or best.code == 'RHB' %}
+                  <div style="margin-bottom:14px;padding:14px 16px;border-radius:12px;
                     border:1px solid #fde68a;background:#fffbeb;
                     display:flex;gap:12px;align-items:flex-start;">
-          <span style="font-size:18px;flex-shrink:0;">⚠</span>
-          <div>
-            <div style="font-size:12px;font-weight:800;color:#92400e;
-                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-              Рекомендуется манжетное крепление
-            </div>
-            <ul style="margin:0;padding-left:16px;font-size:12px;color:#92400e;">
-              {% for reason in recommendation.manjetnoe_reasons %}
-                <li>{{ reason }}</li>
+                    <span style="font-size:18px;flex-shrink:0;">⚠</span>
+                    <div>
+                      <div style="font-size:12px;font-weight:800;color:#92400e;
+                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Рекомендуется манжетное крепление</div>
+                      <ul style="margin:0;padding-left:16px;font-size:12px;color:#92400e;">
+                        {% for reason in recommendation.manjetnoe_reasons %}
+                          <li>{{ reason }}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  </div>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+
+            {% comment %}Карточки насосов{% endcomment %}
+            <div class="pump-cards">
+              {% for pump in recommendation.pumps %}
+                <div class="pump-card {{ pump.verdict }}" style="{% if selected_pump == pump.code %}outline:3px solid #3b82f6;outline-offset:2px;{% endif %}">
+                  <div class="pump-verdict {{ pump.verdict }}">
+                    {% if pump.verdict == 'recommended' %}
+                      Рекомендован
+                    {% elif pump.verdict == 'acceptable' %}
+                      Допустим
+                    {% else %}
+                      Не рекомендован
+                    {% endif %}
+                  </div>
+
+                  <div class="pump-code">{{ pump.code }}</div>
+                  <div class="pump-name">{{ pump.name }}</div>
+
+                  <div class="score-bar">
+                    <div class="score-bar-fill" style="width:{{ pump.pct }}%"></div>
+                  </div>
+
+                  <ul class="pump-reasons">
+                    {% for r in pump.reasons %}
+                      <li class="{% if r.good %}
+                          good
+                        {% elif r.bad %}
+                          bad
+                        {% endif %}">{{ r.text }}</li>
+                    {% empty %}
+                      <li>Нет специфических условий</li>
+                    {% endfor %}
+                  </ul>
+
+                  {% comment %}Кнопки выбора размера{% endcomment %}
+                  {% if pump.verdict != 'not_recommended' %}
+                    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
+                      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Выбрать размер:</div>
+
+                      {% if pump.code == 'RHA' or pump.code == 'RHB' or pump.code == 'RHT' %}
+                        {% for item in rh_sizes %}
+                          <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="display:inline-block;margin:2px 2px 2px 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="pump_code" value="{{ pump.code }}" />
+                            <input type="hidden" name="pump_size" value="{{ item.size }}" />
+                            <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}" />
+                            <button type="submit" class="size-btn {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
+                              {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
+                              {{ item.size }}
+                              <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
+                            </button>
+                          </form>
+                        {% empty %}
+                          <span style="font-size:11px;color:var(--muted);">—</span>
+                        {% endfor %}
+                      {% elif pump.code == 'TH' %}
+                        {% for item in th_sizes %}
+                          <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="display:inline-block;margin:2px 2px 2px 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="pump_code" value="{{ pump.code }}" />
+                            <input type="hidden" name="pump_size" value="{{ item.size }}" />
+                            <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}" />
+                            <button type="submit" class="size-btn size-btn-th {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
+                              {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
+                              {{ item.size }}
+                              <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
+                            </button>
+                          </form>
+                        {% empty %}
+                          <span style="font-size:11px;color:var(--muted);">—</span>
+                        {% endfor %}
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
               {% endfor %}
-            </ul>
+            </div>
+
+            {% comment %}Дерево решений{% endcomment %}
+            {% if recommendation.log %}
+              <div class="rec2-log-title">Дерево решений</div>
+              <div class="rec2-log">
+                {% for line in recommendation.log %}
+                  {{ line }}<br />
+                {% endfor %}
+              </div>
+            {% endif %}
           </div>
         </div>
-        {% endif %}
-      {% endwith %}
-    {% endif %}
- 
-    {% comment %} Карточки насосов {% endcomment %}
-    <div class="pump-cards">
-      {% for pump in recommendation.pumps %}
-      <div class="pump-card {{ pump.verdict }}"
-           style="{% if selected_pump == pump.code %}outline:3px solid #3b82f6;outline-offset:2px;{% endif %}">
- 
-        <div class="pump-verdict {{ pump.verdict }}">
-          {% if pump.verdict == 'recommended' %}✓ Рекомендован
-          {% elif pump.verdict == 'acceptable' %}~ Допустим
-          {% else %}✗ Не рекомендован{% endif %}
-        </div>
- 
-        <div class="pump-code">{{ pump.code }}</div>
-        <div class="pump-name">{{ pump.name }}</div>
- 
-        <div class="score-bar">
-          <div class="score-bar-fill" style="width:{{ pump.pct }}%"></div>
-        </div>
- 
-        <ul class="pump-reasons">
-          {% for r in pump.reasons %}
-            <li class="{% if r.good %}good{% elif r.bad %}bad{% endif %}">{{ r.text }}</li>
-          {% empty %}
-            <li>Нет специфических условий</li>
-          {% endfor %}
-        </ul>
- 
-        {% comment %} Кнопки выбора размера {% endcomment %}
-        {% if pump.verdict != 'not_recommended' %}
-        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
-          <div style="font-size:10px;font-weight:800;color:var(--muted);
-                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-            Выбрать размер:
-          </div>
- 
-          {% if pump.code == 'RHA' or pump.code == 'RHB' or pump.code == 'RHT' %}
-            {% for item in rh_sizes %}
-            <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}"
-                  style="display:inline-block;margin:2px 2px 2px 0;">
-              {% csrf_token %}
-              <input type="hidden" name="pump_code"    value="{{ pump.code }}">
-              <input type="hidden" name="pump_size"    value="{{ item.size }}">
-              <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}">
-              <button type="submit"
-                class="size-btn {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
-                {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
-                {{ item.size }}
-                <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
-              </button>
-            </form>
-            {% empty %}
-              <span style="font-size:11px;color:var(--muted);">—</span>
-            {% endfor %}
- 
-          {% elif pump.code == 'TH' %}
-            {% for item in th_sizes %}
-            <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}"
-                  style="display:inline-block;margin:2px 2px 2px 0;">
-              {% csrf_token %}
-              <input type="hidden" name="pump_code"    value="{{ pump.code }}">
-              <input type="hidden" name="pump_size"    value="{{ item.size }}">
-              <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}">
-              <button type="submit"
-                class="size-btn size-btn-th {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
-                {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
-                {{ item.size }}
-                <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
-              </button>
-            </form>
-            {% empty %}
-              <span style="font-size:11px;color:var(--muted);">—</span>
-            {% endfor %}
-          {% endif %}
- 
-        </div>
-        {% endif %}
- 
-      </div>
-      {% endfor %}
-    </div>
- 
-    {% comment %} Дерево решений {% endcomment %}
-    {% if recommendation.log %}
-    <div class="rec2-log-title">Дерево решений</div>
-    <div class="rec2-log">
-      {% for line in recommendation.log %}{{ line }}<br>{% endfor %}
-    </div>
-    {% endif %}
- 
-  </div>
-</div>
-{% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {# БЛОК 2: Расчёт длины цилиндра и удлинителей                    #}
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {% if cylinder_rec and cylinder_rec.has_data %}
-<div class="rec2-block" style="margin-bottom:20px;">
-  <div class="rec2-head">
-    <div class="rec2-head-title">
-      Расчёт длины цилиндра и удлинителей
-      {% if selected_pump_full %} - {{ selected_pump_full }}{% endif %}
-    </div>
-  </div>
-  <div class="rec2-body">
-
-    {% if not selected_pump %}
-    <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">
-      ⚠ Выберите насос в блоке рекомендаций выше для точного расчёта
-    </div>
-    {% endif %}
-
-    <div class="meta-row" style="margin-bottom:16px;">
-      <div class="meta-item">
-        <div class="label">Длина плунжера (П)</div>
-        <div class="value">{{ cylinder_rec.P }} фута — {{ cylinder_rec.plunger_mm }} мм</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ cylinder_rec.plunger_note }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Ход плунжера</div>
-        <div class="value">{{ cylinder_rec.stroke_mm }} мм = {{ cylinder_rec.N_ft }} фут.</div>
-      </div>
-      {% if cylinder_rec.K %}
-      <div class="meta-item">
-        <div class="label">Коэф. К</div>
-        <div class="value">{{ cylinder_rec.K }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Треб. В+У</div>
-        <div class="value">{{ cylinder_rec.required_BU }} фут.</div>
-      </div>
-      {% else %}
-      <div class="meta-item">
-        <div class="label">Ориентировочная В+У</div>
-        <div class="value">{{ cylinder_rec.req_range.0 }}–{{ cylinder_rec.req_range.1 }} фут.</div>
-      </div>
       {% endif %}
-    </div>
 
-    {% if cylinder_rec.note %}
-    <div style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;margin-bottom:14px;">
-      {{ cylinder_rec.note }}
-    </div>
-    {% endif %}
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {# БЛОК 2: Расчёт длины цилиндра и удлинителей #}
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {% if cylinder_rec and cylinder_rec.has_data %}
+        <div class="rec2-block" style="margin-bottom:20px;">
+          <div class="rec2-head">
+            <div class="rec2-head-title">
+              Расчёт длины цилиндра и удлинителей{% if selected_pump_full %}
+                - {{ selected_pump_full }}
+              {% endif %}
+            </div>
+          </div>
+          <div class="rec2-body">
+            {% if not selected_pump %}
+              <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">⚠ Выберите насос в блоке рекомендаций выше для точного расчёта</div>
+            {% endif %}
 
-    {% if cylinder_rec.results %}
-    <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
-      Варианты подбора
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px;">
-      {% for r in cylinder_rec.results %}
-<div class="cyl-variant-card"
-     data-cyl="{{ r.V }}-{{ cylinder_rec.P }}-{{ r.u1 }}-{{ r.u2 }}"
-     style="padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+            <div class="meta-row" style="margin-bottom:16px;">
+              <div class="meta-item">
+                <div class="label">Длина плунжера (П)</div>
+                <div class="value">{{ cylinder_rec.P }} фута — {{ cylinder_rec.plunger_mm }} мм</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ cylinder_rec.plunger_note }}</div>
+              </div>
+              <div class="meta-item">
+                <div class="label">Ход плунжера</div>
+                <div class="value">{{ cylinder_rec.stroke_mm }} мм = {{ cylinder_rec.N_ft }} фут.</div>
+              </div>
+              {% if cylinder_rec.K %}
+                <div class="meta-item">
+                  <div class="label">Коэф. К</div>
+                  <div class="value">{{ cylinder_rec.K }}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="label">Треб. В+У</div>
+                  <div class="value">{{ cylinder_rec.required_BU }} фут.</div>
+                </div>
+              {% else %}
+                <div class="meta-item">
+                  <div class="label">Ориентировочная В+У</div>
+                  <div class="value">{{ cylinder_rec.req_range.0 }}–{{ cylinder_rec.req_range.1 }} фут.</div>
+                </div>
+              {% endif %}
+            </div>
+
+            {% if cylinder_rec.note %}
+              <div style="padding:10px 14px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;margin-bottom:14px;">{{ cylinder_rec.note }}</div>
+            {% endif %}
+
+            {% if cylinder_rec.results %}
+              <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Варианты подбора</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px;">
+                {% for r in cylinder_rec.results %}
+                  <div class="cyl-variant-card" data-cyl="{{ r.V }}-{{ cylinder_rec.P }}-{{ r.u1 }}-{{ r.u2 }}" style="padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
             transition:all .15s;
             {% if forloop.first %}outline:2px solid #3b82f6;outline-offset:2px;{% endif %}">
-  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
-    Удлинители {{ r.U }} фут. ({{ r.u1 }}' + {{ r.u2 }}')
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-    <span style="padding:6px 12px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;font-size:13px;font-weight:800;color:#166534;">
-      Цилиндр: {{ r.V }}'
-    </span>
-    <span style="padding:6px 12px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;font-size:13px;font-weight:800;color:#1d4ed8;">
-      В+У = {{ r.BU }}'
-    </span>
-  </div>
-  <div style="font-size:12px;color:var(--muted);">
-    Макс. ход: <b>{{ r.stroke_mm }} мм</b>
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:monospace;word-break:break-all;">
-    {{ r.designation }}
-  </div>
-</div>
-{% endfor %}
-    </div>
-    <div style="font-size:11px;color:var(--muted);">
-      Формула (Приложение В): В + У = Н + П + К
-    </div>
-    {% endif %}
+                    <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Удлинители {{ r.U }} фут. ({{ r.u1 }}' + {{ r.u2 }}')</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                      <span style="padding:6px 12px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;font-size:13px;font-weight:800;color:#166534;">Цилиндр: {{ r.V }}'</span>
+                      <span style="padding:6px 12px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;font-size:13px;font-weight:800;color:#1d4ed8;">В+У = {{ r.BU }}'</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);">
+                      Макс. ход: <b>{{ r.stroke_mm }} мм</b>
+                    </div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:monospace;word-break:break-all;">{{ r.designation }}</div>
+                  </div>
+                {% endfor %}
+              </div>
+              <div style="font-size:11px;color:var(--muted);">Формула (Приложение В): В + У = Н + П + К</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
 
-  </div>
-</div>
-{% endif %}
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {# БЛОК 3: Группа посадки плунжера (новый) #}
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {% if fit_rec and fit_rec.has_data %}
+        <div class="rec2-block" style="margin-bottom:20px;">
+          <div class="rec2-head">
+            <div class="rec2-head-title">Группа посадки плунжера</div>
+          </div>
+          <div class="rec2-body">
+            {% if not selected_pump %}
+              <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">⚠ Выберите насос выше для точного подбора зазора</div>
+            {% endif %}
 
-    
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {# БЛОК 3: Группа посадки плунжера (новый)                        #}
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {% if fit_rec and fit_rec.has_data %}
-<div class="rec2-block" style="margin-bottom:20px;">
-  <div class="rec2-head">
-    <div class="rec2-head-title">
-      Группа посадки плунжера 
-    </div>
-  </div>
-  <div class="rec2-body">
+            <div class="meta-row" style="margin-bottom:16px;">
+              <div class="meta-item">
+                <div class="label">Диаметр насоса</div>
+                <div class="value">{{ fit_rec.size_key }} ({{ fit_rec.diam_mm }} мм)</div>
+              </div>
+              <div class="meta-item">
+                <div class="label">По табл. 13</div>
+                <div class="value">Fit-{{ fit_rec.base_fit }}</div>
+              </div>
+              <div class="meta-item">
+                <div class="label">Рекомендованная</div>
+                <div class="value" style="color:#166534;font-weight:900;">Fit-{{ fit_rec.recommended_fit }}</div>
+              </div>
+              <div class="meta-item">
+                <div class="label">Номин. зазор</div>
+                <div class="value">{{ fit_rec.nominal_mm }} мм</div>
+              </div>
+              <div class="meta-item">
+                <div class="label">Диапазон</div>
+                <div class="value">{{ fit_rec.range_min }}–{{ fit_rec.range_max }} мм</div>
+              </div>
+            </div>
 
-    {% if not selected_pump %}
-    <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:14px;">
-      ⚠ Выберите насос выше для точного подбора зазора
-    </div>
-    {% endif %}
-
-    <div class="meta-row" style="margin-bottom:16px;">
-      <div class="meta-item">
-        <div class="label">Диаметр насоса</div>
-        <div class="value">{{ fit_rec.size_key }} ({{ fit_rec.diam_mm }} мм)</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">По табл. 13</div>
-        <div class="value">Fit-{{ fit_rec.base_fit }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Рекомендованная</div>
-        <div class="value" style="color:#166534;font-weight:900;">Fit-{{ fit_rec.recommended_fit }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Номин. зазор</div>
-        <div class="value">{{ fit_rec.nominal_mm }} мм</div>
-      </div>
-      <div class="meta-item">
-        <div class="label">Диапазон</div>
-        <div class="value">{{ fit_rec.range_min }}–{{ fit_rec.range_max }} мм</div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-      {% for f in fit_rec.allowed_fits %}
-<div class="fit-variant-card"
-     data-fit="{{ f.fit }}"
-     onclick="API.fit='{{ f.fit }}'; renderPanel();
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+              {% for f in fit_rec.allowed_fits %}
+                <div class="fit-variant-card"
+                  data-fit="{{ f.fit }}"
+                  onclick="API.fit='{{ f.fit }}'; renderPanel();
               document.querySelectorAll('.fit-variant-card').forEach(c=>c.style.outline='');
               this.style.outline='2px solid #3b82f6'; this.style.outlineOffset='2px';"
-     style="flex:1;min-width:90px;padding:12px 10px;border-radius:12px;text-align:center;cursor:pointer;transition:all .15s;
-       {% if f.is_recommended %}border:2px solid #22c55e;background:#f0fdf4;
-       {% elif f.is_optimal %}border:1px solid #bfdbfe;background:#eff6ff;
-       {% else %}border:1px solid var(--line);background:#fff;{% endif %}">
-  <div style="font-size:13px;font-weight:900;{% if f.is_recommended %}color:#166534;{% endif %}">
-    Fit-{{ f.fit }}{% if f.is_recommended %} ✓{% endif %}
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ f.nominal }} мм</div>
-  <div style="font-size:10px;color:var(--muted);">{{ f.range_min }}–{{ f.range_max }}</div>
-</div>
-{% endfor %}
-    </div>
+                  style="flex:1;min-width:90px;padding:12px 10px;border-radius:12px;text-align:center;cursor:pointer;transition:all .15s;
+       {% if f.is_recommended %}
+                    border:2px solid #22c55e;background:#f0fdf4;
 
-    {% if fit_rec.reasons %}
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Обоснование</div>
-      {% for r in fit_rec.reasons %}
-      <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;">
-        {% if r.direction == 'up' %}<span style="color:#f59e0b;flex-shrink:0;">↑</span><span style="color:#92400e;">{{ r.text }}</span>
-        {% elif r.direction == 'down' %}<span style="color:#3b82f6;flex-shrink:0;">↓</span><span style="color:#1d4ed8;">{{ r.text }}</span>
-        {% else %}<span style="color:var(--muted);flex-shrink:0;">›</span><span style="color:var(--muted);">{{ r.text }}</span>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
+                  {% elif f.is_optimal %}
+                    border:1px solid #bfdbfe;background:#eff6ff;
 
+                  {% else %}
+                    border:1px solid var(--line);background:#fff;
+                  {% endif %}">
+                  <div style="font-size:13px;font-weight:900;{% if f.is_recommended %}color:#166534;{% endif %}">
+                    Fit-{{ f.fit }}{% if f.is_recommended %} ✓{% endif %}
+                  </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ f.nominal }} мм</div>
+                  <div style="font-size:10px;color:var(--muted);">{{ f.range_min }}–{{ f.range_max }}</div>
+                </div>
+              {% endfor %}
+            </div>
 
+            {% if fit_rec.reasons %}
+              <div style="margin-bottom:12px;">
+                <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Обоснование</div>
+                {% for r in fit_rec.reasons %}
+                  <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;">
+                    {% if r.direction == 'up' %}
+                      <span style="color:#f59e0b;flex-shrink:0;">↑</span><span style="color:#92400e;">{{ r.text }}</span>
+                    {% elif r.direction == 'down' %}
+                      <span style="color:#3b82f6;flex-shrink:0;">↓</span><span style="color:#1d4ed8;">{{ r.text }}</span>
+                    {% else %}
+                      <span style="color:var(--muted);flex-shrink:0;">›</span><span style="color:var(--muted);">{{ r.text }}</span>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
 
-  </div>
-</div>
-{% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {# БЛОК 4: Выбор материалов (Таблица 14)                          #}
-    {# ═══════════════════════════════════════════════════════════════ #}
-    {% if material_rec and material_rec.has_data %}
-<div class="rec2-block" style="margin-bottom:20px;">
-  <div class="rec2-head">
-    <div class="rec2-head-title">Выбор материалов (Таблица 14)</div>
-  </div>
-  <div class="rec2-body">
-    {% if material_rec.summary %}
-    <div style="margin-bottom:20px;padding:14px 16px;border-radius:12px;
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {# БЛОК 4: Выбор материалов (Таблица 14) #}
+      {# ═══════════════════════════════════════════════════════════════ #}
+      {% if material_rec and material_rec.has_data %}
+        <div class="rec2-block" style="margin-bottom:20px;">
+          <div class="rec2-head">
+            <div class="rec2-head-title">Выбор материалов (Таблица 14)</div>
+          </div>
+          <div class="rec2-body">
+            {% if material_rec.summary %}
+              <div style="margin-bottom:20px;padding:14px 16px;border-radius:12px;
                 border:2px solid var(--accent2);background:var(--bg);">
-      <div style="font-size:11px;font-weight:800;color:var(--muted);
-                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
-        Итоговая рекомендация по материалам
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-        <!-- Цилиндр -->
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
-          <div style="font-size:10px;font-weight:800;color:var(--muted);
-                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-            Цилиндр
-          </div>
-          {% for mat in material_rec.summary.cyl %}
-          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                <div style="font-size:11px;font-weight:800;color:var(--muted);
+                  text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Итоговая рекомендация по материалам</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <!-- Цилиндр -->
+                  <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
+                    <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Цилиндр</div>
+                    {% for mat in material_rec.summary.cyl %}
+                      <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
                       border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
-              {{ mat.material }}
-            </div>
-            <div style="font-size:11px;color:{{ mat.color }};">
-              {{ mat.text }}
-            </div>
-          </div>
-          {% empty %}
-          <div style="color:var(--muted);">—</div>
-          {% endfor %}
-        </div>
+                        <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">{{ mat.material }}</div>
+                        <div style="font-size:11px;color:{{ mat.color }};">{{ mat.text }}</div>
+                      </div>
+                    {% empty %}
+                      <div style="color:var(--muted);">—</div>
+                    {% endfor %}
+                  </div>
 
-        <!-- Плунжер -->
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
-          <div style="font-size:10px;font-weight:800;color:var(--muted);
-                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-            Плунжер
-          </div>
-          {% for mat in material_rec.summary.plu %}
-          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                  <!-- Плунжер -->
+                  <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
+                    <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Плунжер</div>
+                    {% for mat in material_rec.summary.plu %}
+                      <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
                       border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
-              {{ mat.material }}
-            </div>
-            <div style="font-size:11px;color:{{ mat.color }};">
-              {{ mat.text }}
-            </div>
-          </div>
-          {% empty %}
-          <div style="color:var(--muted);">—</div>
-          {% endfor %}
-        </div>
+                        <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">{{ mat.material }}</div>
+                        <div style="font-size:11px;color:{{ mat.color }};">{{ mat.text }}</div>
+                      </div>
+                    {% empty %}
+                      <div style="color:var(--muted);">—</div>
+                    {% endfor %}
+                  </div>
 
-        <!-- Клапанная пара -->
-        <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
-          <div style="font-size:10px;font-weight:800;color:var(--muted);
-                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
-            Клапанная пара
-          </div>
-          {% for mat in material_rec.summary.val %}
-          <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
+                  <!-- Клапанная пара -->
+                  <div style="flex:1;min-width:160px;padding:12px 14px;border-radius:12px;">
+                    <div style="font-size:10px;font-weight:800;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Клапанная пара</div>
+                    {% for mat in material_rec.summary.val %}
+                      <div style="margin-bottom:8px; padding:8px 10px; border-radius:10px;
                       border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-            <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">
-              {{ mat.material }}
-            </div>
-            <div style="font-size:11px;color:{{ mat.color }};">
-              {{ mat.text }}
-            </div>
-          </div>
-          {% empty %}
-          <div style="color:var(--muted);">—</div>
-          {% endfor %}
-        </div>
-
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Детализация по средам (аккордеон) -->
-    <details style="margin-top: 12px;">
-      <summary style="cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">
-        Детализация по типам сред ({{ material_rec.rows|length }})
-      </summary>
-      <div style="margin-top: 16px;">
-        {% for row in material_rec.rows %}
-        <div style="margin-bottom:20px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg);">
-          <div style="font-size:13px;font-weight:800;color:var(--accent2);margin-bottom:12px;">
-            {{ row.label }}
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-            <!-- Цилиндр для этой среды -->
-            <div style="flex:1;min-width:150px;">
-              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Цилиндр</div>
-              {% for mat in row.cyl_best %}
-              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
-                          border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
-                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+                        <div style="font-size:13px;font-weight:800;color:{{ mat.color }};">{{ mat.material }}</div>
+                        <div style="font-size:11px;color:{{ mat.color }};">{{ mat.text }}</div>
+                      </div>
+                    {% empty %}
+                      <div style="color:var(--muted);">—</div>
+                    {% endfor %}
+                  </div>
+                </div>
               </div>
-              {% endfor %}
-            </div>
+            {% endif %}
 
-            <!-- Плунжер для этой среды -->
-            <div style="flex:1;min-width:150px;">
-              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Плунжер</div>
-              {% for mat in row.plu_best %}
-              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+            <!-- Детализация по средам (аккордеон) -->
+            <details style="margin-top: 12px;">
+              <summary style="cursor: pointer; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">Детализация по типам сред ({{ material_rec.rows|length }})</summary>
+              <div style="margin-top: 16px;">
+                {% for row in material_rec.rows %}
+                  <div style="margin-bottom:20px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg);">
+                    <div style="font-size:13px;font-weight:800;color:var(--accent2);margin-bottom:12px;">{{ row.label }}</div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                      <!-- Цилиндр для этой среды -->
+                      <div style="flex:1;min-width:150px;">
+                        <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Цилиндр</div>
+                        {% for mat in row.cyl_best %}
+                          <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
                           border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
-                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
-              </div>
-              {% endfor %}
-            </div>
+                            <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                            <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+                          </div>
+                        {% endfor %}
+                      </div>
 
-            <!-- Клапаны для этой среды -->
-            <div style="flex:1;min-width:150px;">
-              <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Клапанная пара</div>
-              {% for mat in row.val_best %}
-              <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+                      <!-- Плунжер для этой среды -->
+                      <div style="flex:1;min-width:150px;">
+                        <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Плунжер</div>
+                        {% for mat in row.plu_best %}
+                          <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
                           border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
-                <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
-                <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
-              </div>
-              {% endfor %}
-            </div>
+                            <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                            <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+                          </div>
+                        {% endfor %}
+                      </div>
 
+                      <!-- Клапаны для этой среды -->
+                      <div style="flex:1;min-width:150px;">
+                        <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">Клапанная пара</div>
+                        {% for mat in row.val_best %}
+                          <div style="margin-bottom:6px; padding:6px 8px; border-radius:8px;
+                          border:1px solid {{ mat.border }}; background:{{ mat.bg }};">
+                            <span style="font-size:12px;font-weight:600;color:{{ mat.color }};">{{ mat.material }}</span>
+                            <span style="font-size:10px;color:{{ mat.color }};">({{ mat.text }})</span>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </details>
           </div>
         </div>
-        {% endfor %}
-      </div>
-    </details>
-  </div>
-</div>
-{% endif %}
+      {% endif %}
 
-    
+      {% if sub.issues_json %}
+        <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Предупреждения</h3>
+        <pre style="background:#fff5f5;border:1px solid rgba(214,31,44,.25);border-radius:12px;padding:12px;overflow:auto;font-size:13px;margin-bottom:16px;">{{ sub.issues_json }}</pre>
+      {% endif %}
 
-    {% if sub.issues_json %}
-      <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Предупреждения</h3>
-      <pre style="background:#fff5f5;border:1px solid rgba(214,31,44,.25);border-radius:12px;padding:12px;overflow:auto;font-size:13px;margin-bottom:16px;">{{ sub.issues_json }}</pre>
-    {% endif %}
-
-    <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px;">Ответы клиента</h3>
-    <table>
-      <thead>
-        <tr><th>Вопрос</th><th>Ответ</th></tr>
-      </thead>
-      <tbody>
-        {% for a in answers %}
-  {% if a.value_text or a.value_number is not None or a.value_bool is not None %}
-  <tr>
-            <td>
-              <b>{{ a.question.label }}</b>
-              <div class="help">
-                {% if a.question.manager_label %}
-                {{ a.question.manager_label }}
-                {% else %}
-                {{ a.question.slug }}
-          {% endif %}
-              </div>
-            </td>
-            <td>
-  {% if a.value_number is not None %}
-    {{ a.value_number }}
-  {% elif a.value_bool is not None %}
-    {% if a.value_bool %}Да{% else %}Нет{% endif %}
-  {% else %}
-    {% if a.question.field_type == 'select' %}
-      {% with opt=a.question.options.all %}
-        {% for o in opt %}
-          {% if o.value == a.value_text %}{{ o.label }}{% endif %}
-        {% endfor %}
-      {% endwith %}
-    {% else %}
-      {{ a.value_text|default:"—" }}
-    {% endif %}
-  {% endif %}
-</td>
+      <h3 style="font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px;">Ответы клиента</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Вопрос</th>
+            <th>Ответ</th>
           </tr>
-          {% endif %}
-        {% empty %}
-          <tr><td colspan="2" style="color:var(--muted);text-align:center;padding:24px;">Нет ответов</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for a in answers %}
+            {% if a.value_text or a.value_number is not None or a.value_bool is not None %}
+              <tr>
+                <td>
+                  <b>{{ a.question.label }}</b>
+                  <div class="help">
+                    {% if a.question.manager_label %}
+                      {{ a.question.manager_label }}
+                    {% else %}
+                      {{ a.question.slug }}
+                    {% endif %}
+                  </div>
+                </td>
+                <td>
+                  {% if a.value_number is not None %}
+                    {{ a.value_number }}
+                  {% elif a.value_bool is not None %}
+                    {% if a.value_bool %}
+                      Да
+                    {% else %}
+                      Нет
+                    {% endif %}
+                  {% else %}
+                    {% if a.question.field_type == 'select' %}
+                      {% with opt=a.question.options.all %}
+                        {% for o in opt %}
+                          {% if o.value == a.value_text %}{{ o.label }}{% endif %}
+                        {% endfor %}
+                      {% endwith %}
+                    {% else %}
+                      {{ a.value_text|default:'—' }}
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endif %}
+          {% empty %}
+            <tr>
+              <td colspan="2" style="color:var(--muted);text-align:center;padding:24px;">Нет ответов</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
 
-    <div class="actions">
-      <a class="btn ghost" href="/q/manager/submissions/">← Назад к списку</a>
+      <div class="actions">
+        <a class="btn ghost" href="/q/manager/submissions/">Назад к списку</a>
+      </div>
     </div>
   </div>
-
-  
-</div>
 {% endblock %}

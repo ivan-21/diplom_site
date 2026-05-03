@@ -1,223 +1,185 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ГШН — Справочник Ижнефтемаш</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;600&family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ГШН — Справочник Ижнефтемаш{% endblock %}
+
+{% block crumbs %}
+<div class="crumbs">
+  <a href="#">Ижнефтемаш</a>
+  <span class="sep">›</span>
+  <span class="current">Справочник ГШН</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Circe:wght@300;400;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink: #1a1410;
-  --paper: #f5f0e8;
-  --aged: #e8e0cc;
-  --rust: #c4420a;
-  --oil: #2c4a1e;
-  --steel: #4a6070;
-  --gold: #b8860b;
-  --light: #faf7f0;
-  --border: #c8b89a;
-  --muted: #7a6a52;
+  --rimera-red:  #EB564F;
+  --rimera-grey: #5B6770;
+  --bg:          #F4F4F4;
+  --card:        #FFFFFF;
+  --text:        #1f2937;
+  --muted:       #6b7280;
+  --line:        #e5e7eb;
+  --shadow:      0 2px 12px rgba(91,103,112,.10);
+  --accent:      var(--rimera-red);
+  --accent2:     var(--rimera-grey);
+  --radius:      4px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: 'Geologica', sans-serif;
-  min-height: 100vh;
+  font-family: 'Circe', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-/* HEADER */
-.site-header {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  border-bottom: 3px solid var(--rust);
+a { color: inherit; text-decoration: none; }
+
+.crumbs {
+  padding: 10px 48px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .2px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
 }
 
-.header-inner {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 14px 32px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
+.crumbs .sep { margin: 0 6px; color: var(--line); }
+.crumbs a:hover { color: var(--rimera-red); }
+.crumbs .current { color: var(--rimera-grey); font-weight: 700; }
 
-.header-logo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  letter-spacing: 4px;
-  color: var(--paper);
-  line-height: 1;
-}
-
-.header-logo span { color: var(--rust); }
-
-.header-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: #999;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.header-nav {
-  margin-left: auto;
-  display: flex;
-  gap: 4px;
-}
-
-.nav-btn {
-  background: none;
-  border: 1px solid #444;
-  color: #aaa;
-  padding: 6px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-  transition: all 0.15s;
-}
-
-.nav-btn:hover, .nav-btn.active {
-  background: var(--rust);
-  border-color: var(--rust);
-  color: white;
-}
-
-/* LAYOUT */
 .layout {
-  max-width: 1400px;
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 240px 1fr;
   min-height: calc(100vh - 65px);
 }
 
-/* SIDEBAR */
 .sidebar {
-  background: var(--aged);
-  border-right: 1px solid var(--border);
-  padding: 24px 0;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  padding: 20px 0;
   position: sticky;
   top: 65px;
   height: calc(100vh - 65px);
   overflow-y: auto;
 }
 
-.sidebar-section {
-  margin-bottom: 8px;
-}
+.sidebar-section { margin-bottom: 4px; }
 
-.sidebar-title {
-  font-family: 'JetBrains Mono', monospace;
+.sidebar-cat {
   font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  padding: 8px 20px 4px;
+  color: var(--muted);
+  padding: 10px 20px 4px;
 }
 
 .sidebar-link {
   display: block;
-  padding: 9px 20px;
+  padding: 8px 20px;
   font-size: 13px;
-  color: var(--ink);
-  cursor: pointer;
-  transition: all 0.12s;
-  border-left: 3px solid transparent;
   font-weight: 400;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .12s;
+  border-left: 3px solid transparent;
 }
 
 .sidebar-link:hover {
-  background: rgba(196,66,10,0.08);
-  border-left-color: var(--rust);
-  color: var(--rust);
+  background: rgba(235,86,79,.05);
+  border-left-color: var(--rimera-red);
+  color: var(--rimera-red);
 }
 
 .sidebar-link.active {
-  background: rgba(196,66,10,0.12);
-  border-left-color: var(--rust);
-  color: var(--rust);
-  font-weight: 600;
+  background: rgba(235,86,79,.07);
+  border-left-color: var(--rimera-red);
+  color: var(--rimera-red);
+  font-weight: 700;
 }
 
-/* CONTENT */
 .content {
-  padding: 40px 48px;
-  background: var(--light);
+  padding: 36px 48px 64px;
+  background: var(--bg);
 }
 
-.section { display: none; animation: fadeIn 0.3s ease; }
+.section { display: none; animation: fadeIn .25s ease; }
 .section.visible { display: block; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
 
-.section-header {
-  margin-bottom: 32px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid var(--border);
+.section-head {
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--line);
 }
 
 .section-tag {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--rust);
-  letter-spacing: 3px;
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  color: var(--rimera-red);
+  margin-bottom: 6px;
 }
 
 .section-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  letter-spacing: 3px;
-  color: var(--ink);
-  line-height: 1;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--rimera-grey);
+  letter-spacing: .5px;
+  line-height: 1.15;
 }
 
 .section-desc {
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 8px;
+  font-size: 13px;
   color: var(--muted);
-  max-width: 600px;
+  max-width: 640px;
   line-height: 1.6;
 }
 
-/* CARDS */
+.section-title-bar {
+  width: 40px;
+  height: 3px;
+  background: var(--rimera-red);
+  margin-bottom: 10px;
+}
+
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
 }
 
 .card {
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
-  transition: box-shadow 0.2s, transform 0.2s;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  transition: box-shadow .18s, border-color .18s;
+  border-top: 3px solid transparent;
 }
 
 .card:hover {
-  box-shadow: 4px 4px 0 var(--rust);
-  transform: translate(-2px, -2px);
+  border-top-color: var(--rimera-red);
+  box-shadow: 0 4px 20px rgba(91,103,112,.14);
 }
 
-.card-icon { font-size: 28px; margin-bottom: 12px; }
-
 .card-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 20px;
-  letter-spacing: 2px;
-  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rimera-grey);
+  text-transform: uppercase;
+  letter-spacing: .4px;
   margin-bottom: 8px;
 }
 
@@ -227,12 +189,42 @@ body {
   line-height: 1.6;
 }
 
-/* TABLES */
+.sub-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rimera-grey);
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  margin: 28px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sub-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  background: var(--rimera-red);
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.sub-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 .table-wrap {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   overflow-x: auto;
-  margin-bottom: 28px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  margin-bottom: 24px;
 }
 
 table {
@@ -241,41 +233,40 @@ table {
   font-size: 13px;
 }
 
-thead tr {
-  background: var(--ink);
-  color: var(--paper);
-}
+thead tr { border-bottom: 2px solid var(--rimera-red); }
 
 thead th {
-  padding: 12px 14px;
   text-align: left;
-  font-family: 'JetBrains Mono', monospace;
+  padding: 11px 14px;
+  font-family: 'Circe', Arial, sans-serif;
   font-size: 11px;
-  letter-spacing: 1px;
-  font-weight: 400;
+  font-weight: 700;
+  color: var(--rimera-grey);
+  text-transform: uppercase;
+  letter-spacing: .8px;
   white-space: nowrap;
+  background: #fafafa;
 }
 
 tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
+  border-bottom: 1px solid var(--line);
+  transition: background .1s;
 }
 
-tbody tr:hover { background: rgba(196,66,10,0.05); }
-
 tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fdf5f5; }
 
-td {
+tbody td {
   padding: 11px 14px;
   vertical-align: top;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .td-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Circe, Arial, sans-serif', monospace;
   font-size: 12px;
-  color: var(--rust);
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--rimera-red);
   white-space: nowrap;
 }
 
@@ -286,119 +277,171 @@ td {
   margin-top: 2px;
 }
 
+.gshn-section-head td {
+  background: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 14px;
+}
+
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--radius);
   font-size: 10px;
-  letter-spacing: 1px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: .5px;
+  font-family: 'Circe', Arial, sans-serif;
 }
 
 .badge-a { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 .badge-b { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
 .badge-c { background: #fde2de; color: #842029; border: 1px solid #f5c2c7; }
-.badge-x { background: #1a1410; color: #f5f0e8; border: 1px solid #1a1410; }
-
-/* SUBSECTION */
-.sub-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 2px;
-  color: var(--ink);
-  margin: 28px 0 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.sub-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
+.badge-x { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
 
 .info-block {
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--rust);
-  border-radius: 4px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--rimera-red);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 14px;
   font-size: 13px;
   line-height: 1.7;
-  color: var(--ink);
+  color: var(--text);
 }
 
-.info-block strong { color: var(--rust); font-weight: 600; }
+.info-block strong { color: var(--rimera-red); }
+.info-block.green  { border-left-color: #22c55e; }
+.info-block.green strong { color: #16a34a; }
+.info-block.grey   { border-left-color: var(--rimera-grey); }
+.info-block.grey strong { color: var(--rimera-grey); }
 
-.info-block.green { border-left-color: var(--oil); }
-.info-block.green strong { color: var(--oil); }
-
-.info-block.gold { border-left-color: var(--gold); }
-
-/* FORMULA */
-.formula-box {
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: 8px;
-  padding: 20px 24px;
-  margin: 16px 0 24px;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.formula-main {
-  font-size: 20px;
-  color: #f0a500;
-  margin-bottom: 16px;
-  letter-spacing: 1px;
-}
-
-.formula-vars {
-  font-size: 12px;
-  color: #aaa;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
-}
-
-.formula-var { color: #f0a500; }
-
-/* TWO COLUMNS */
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-/* LIST ITEMS */
-.check-list {
-  list-style: none;
-  margin: 8px 0 20px;
-}
+.check-list { list-style: none; margin: 8px 0 18px; }
 
 .check-list li {
-  padding: 6px 0 6px 24px;
+  padding: 6px 0 6px 22px;
   position: relative;
   font-size: 13px;
-  line-height: 1.5;
-  border-bottom: 1px dashed var(--border);
+  line-height: 1.55;
+  border-bottom: 1px solid var(--line);
 }
 
 .check-list li:last-child { border-bottom: none; }
 
 .check-list li::before {
-  content: '→';
+  content: '—';
   position: absolute;
   left: 0;
-  color: var(--rust);
+  color: var(--rimera-red);
   font-weight: 700;
 }
 
-/* PUMP TYPE SELECTOR */
+.marking-box {
+  background: var(--rimera-grey);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  border-left: 4px solid var(--rimera-red);
+}
+
+.marking-example {
+  font-family: 'Circe', Arial, sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.marking-parts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.marking-part { text-align: center; }
+
+.marking-part .mp-code {
+  font-family: 'Circe, Arial, sans-serif', monospace;
+  font-size: 18px;
+  font-weight: 900;
+  padding: 7px 11px;
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  min-width: 36px;
+  display: inline-block;
+}
+
+.marking-part .mp-sep {
+  font-size: 22px;
+  color: rgba(255,255,255,.4);
+  line-height: 42px;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.marking-part .mp-label {
+  font-size: 9px;
+  color: rgba(255,255,255,.6);
+  letter-spacing: .5px;
+  line-height: 1.4;
+  max-width: 80px;
+  margin: 0 auto;
+}
+
+.c1 { background: var(--rimera-red); color: #fff; }
+.c2 { background: #3a7a28; color: #fff; }
+.c3 { background: var(--rimera-grey); color: #fff; }
+.c4 { background: #b8860b; color: #fff; }
+.c5 { background: #4d3928; color: #fff; }
+.c6 { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+
+.formula-box {
+  background: var(--rimera-grey);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 14px 0 22px;
+  border-left: 4px solid var(--rimera-red);
+}
+
+.formula-main {
+  font-family: 'Circe, Arial, sans-serif', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+}
+
+.formula-vars {
+  font-size: 12px;
+  color: rgba(255,255,255,.7);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  line-height: 1.6;
+}
+
+.formula-var {
+  font-family: 'Circe, Arial, sans-serif', monospace;
+  font-weight: 700;
+  color: #fff;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
 .pump-types {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -407,163 +450,45 @@ td {
 }
 
 .pump-type-card {
-  background: var(--paper);
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: 3px solid transparent;
+  border-radius: var(--radius);
+  padding: 18px 16px;
   cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
+  transition: all .15s;
+  box-shadow: var(--shadow);
 }
 
 .pump-type-card:hover {
-  border-color: var(--rust);
-  box-shadow: 3px 3px 0 var(--rust);
-  transform: translate(-1px, -1px);
+  border-top-color: var(--rimera-red);
+  box-shadow: 0 4px 20px rgba(91,103,112,.14);
 }
 
-.pump-type-card .ptc-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 24px;
-  letter-spacing: 2px;
-  color: var(--rust);
-  margin-bottom: 4px;
-}
-
-.pump-type-card .ptc-full {
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-.pump-type-card .ptc-desc {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ink);
-}
-
-/* MARKING DECODER */
-.marking-box {
-  background: var(--ink);
-  border-radius: 8px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.marking-example {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  letter-spacing: 6px;
-  color: var(--paper);
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.marking-parts {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.marking-part {
-  text-align: center;
-}
-
-.marking-part .mp-code {
-  font-family: 'Bebas Neue', sans-serif;
+.ptc-name {
   font-size: 20px;
-  letter-spacing: 2px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  margin-bottom: 6px;
-}
-
-.marking-part .mp-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  color: #888;
+  font-weight: 800;
+  color: var(--rimera-red);
   letter-spacing: 1px;
-  line-height: 1.4;
-  max-width: 80px;
-  margin: 0 auto;
+  text-transform: uppercase;
+  margin-bottom: 3px;
 }
 
-.c1 { background: #c4420a; color: white; }
-.c2 { background: #2c4a1e; color: white; }
-.c3 { background: #4a6070; color: white; }
-.c4 { background: #b8860b; color: white; }
-.c5 { background: #5a3e2b; color: white; }
-.c6 { background: #444; color: white; }
-.c7 { background: #333; color: white; }
-
-/* SCROLL TO TOP */
-.back-top {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--rust);
-  color: white;
-  border: none;
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  font-size: 18px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 300;
-}
-
-.back-top.visible { opacity: 1; }
-
-/* HIGHLIGHT ROW */
-tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
-
-/* THREE COLUMNS */
-.three-col {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-/* PRIORITY BLOCKS */
-.priority-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.priority-item {
-  flex: 1;
-  background: var(--paper);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-}
-
-.priority-item .pi-num {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  color: var(--rust);
-  line-height: 1;
-  margin-bottom: 6px;
-}
-
-.priority-item .pi-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.priority-item .pi-sub {
-  font-size: 11px;
+.ptc-full {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
   color: var(--muted);
-  margin-top: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
 }
 
-/* FIT GRID */
+.ptc-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
 .fit-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -572,49 +497,46 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
 }
 
 .fit-item {
-  background: var(--paper);
-  border: 2px solid var(--border);
-  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 14px 8px;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 
 .fit-item.optimal {
-  border-color: var(--rust);
-  background: rgba(196,66,10,0.06);
+  border-color: var(--rimera-red);
+  border-top: 3px solid var(--rimera-red);
+  background: #fff9f9;
 }
 
-.fit-item .fi-code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+.fi-code {
+  font-size: 11px;
   font-weight: 700;
-  color: var(--rust);
+  color: var(--rimera-red);
+  text-transform: uppercase;
+  letter-spacing: .5px;
   margin-bottom: 6px;
 }
 
-.fit-item .fi-val {
-  font-size: 16px;
+.fi-val {
+  font-family: 'Circe, Arial, sans-serif', monospace;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--rimera-grey);
   margin-bottom: 3px;
 }
 
-.fit-item .fi-range {
-  font-size: 10px;
-  color: var(--muted);
-}
+.fi-range { font-size: 10px; color: var(--muted); }
 
-/* ORDER STEPS */
-.order-steps {
-  counter-reset: ostep;
-  margin-bottom: 20px;
-}
+.order-steps { margin-bottom: 20px; counter-reset: ostep; }
 
 .order-step {
   counter-increment: ostep;
   display: flex;
   gap: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   align-items: flex-start;
 }
 
@@ -622,13 +544,12 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
   content: counter(ostep);
   min-width: 28px;
   height: 28px;
-  background: var(--rust);
-  color: white;
-  border-radius: 50%;
+  background: var(--rimera-red);
+  color: #fff;
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
@@ -636,121 +557,227 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
 }
 
 .order-step-body {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 14px;
   font-size: 13px;
-  line-height: 1.65;
-  color: var(--ink);
-  padding-top: 3px;
+  line-height: 1.6;
+  flex: 1;
+  box-shadow: var(--shadow);
 }
 
-.order-step-body strong { color: var(--rust); font-weight: 700; }
+.order-step-body strong { color: var(--rimera-red); }
 
-/* LEGEND ROW */
 .legend-row {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   font-size: 12px;
   color: var(--muted);
   align-items: center;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
-/* TABLE SECTION HEAD */
-.gshn-section-head td {
-  background: var(--aged);
-  font-family: 'JetBrains Mono', monospace;
+.calc-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.calc-panel-head {
+  background: var(--rimera-grey);
+  color: #fff;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-left: 4px solid var(--rimera-red);
+}
+
+.calc-panel-body { padding: 22px 24px 18px; }
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.calc-label {
+  display: block;
   font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--rimera-grey);
+  margin-bottom: 5px;
+}
+
+.calc-input, .calc-select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+  font-family: 'Circe', Arial, sans-serif;
+  font-size: 13px;
+  transition: border-color .15s;
+}
+
+.calc-input:focus, .calc-select:focus {
+  outline: none;
+  border-color: var(--rimera-red);
+}
+
+.calc-result {
+  background: var(--rimera-grey);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  border-left: 4px solid var(--rimera-red);
+}
+
+.calc-result-label {
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 600;
-  padding: 7px 14px;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 10px;
 }
 
-/* RESPONSIVE */
-@media (max-width: 900px) {
+#calc_out {
+  font-family: 'Circe, Arial, sans-serif', monospace;
+  font-size: 14px;
+  line-height: 2;
+  color: #fff;
+  white-space: pre;
+}
+
+.back-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--rimera-red);
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .2s;
+  z-index: 400;
+  font-weight: 700;
+}
+
+.back-top.visible { opacity: 1; }
+
+.priority-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.priority-item {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border-top: 3px solid transparent;
+}
+
+.priority-item:nth-child(1) { border-top-color: var(--rimera-red); }
+.priority-item:nth-child(2) { border-top-color: var(--rimera-grey); }
+.priority-item:nth-child(3) { border-top-color: #8a9299; }
+
+.pi-num {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--rimera-red);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.pi-label { font-size: 13px; font-weight: 700; color: var(--rimera-grey); }
+.pi-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* wrap/page-body override */
+.wrap, .page-body { padding: 0 !important; }
+
+@media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .content { padding: 24px 20px; }
-  .two-col, .pump-types, .three-col { grid-template-columns: 1fr; }
-  .marking-parts { gap: 6px; }
+  .content { padding: 24px 20px 40px; }
+  .crumbs { padding: 10px 20px; }
+  .two-col, .pump-types { grid-template-columns: 1fr; }
   .fit-grid { grid-template-columns: repeat(3, 1fr); }
   .priority-row { flex-direction: column; }
+  .calc-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 640px) {
+  .fit-grid { grid-template-columns: 1fr 1fr; }
+  .calc-grid { grid-template-columns: 1fr; }
 }
 </style>
-</head>
-<body>
-  <button onclick="history.back()" style="
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 999;
-  background: #1a1410;
-  color: #f5f0e8;
-  border: 1px solid #444;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: all 0.15s;
-" onmouseover="this.style.borderColor='#c4420a';this.style.color='#c4420a'" 
-   onmouseout="this.style.borderColor='#444';this.style.color='#f5f0e8'">
-  ← НАЗАД
-</button>
-
-<header class="site-header">
-  <div class="header-inner">
-    <div>
-      <div class="header-logo">ГШН <span>РЭ</span></div>
-      <div class="header-sub">Ижнефтемаш · API 11AX · Справочник</div>
-    </div>
-  </div>
-</header>
 
 <div class="layout">
-  <!-- SIDEBAR -->
+
+  <!-- САЙДБАР -->
   <aside class="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-title">Общее</div>
-      <div class="sidebar-link active" onclick="showSection('overview')"> Обзор документа</div>
-      <div class="sidebar-link" onclick="showSection('types')"> Типы насосов</div>
+      <div class="sidebar-cat">Общее</div>
+      <div class="sidebar-link active" onclick="showSection('overview')">Обзор документа</div>
+      <div class="sidebar-link" onclick="showSection('types')">Типы насосов</div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-title">Глава 2 — Выбор насоса</div>
-      <div class="sidebar-link" onclick="showSection('ch2-type')"> 2.1 Выбор типа насоса</div>
-      <div class="sidebar-link" onclick="showSection('ch2-cyl')"> 2.2 Цилиндр и плунжер</div>
-      <div class="sidebar-link" onclick="showSection('ch2-gap')"> 2.3 Зазор плунжера</div>
-      <div class="sidebar-link" onclick="showSection('ch2-mat')"> 2.4 Материалы деталей</div>
-      <div class="sidebar-link" onclick="showSection('ch2-spec')"> 2.5 Спецусловия</div>
-      <div class="sidebar-link" onclick="showSection('ch2-order')"> 2.6 Оформление заказа</div>
+      <div class="sidebar-cat">Глава 2 — Выбор насоса</div>
+      <div class="sidebar-link" onclick="showSection('ch2-type')">2.1 Выбор типа насоса</div>
+      <div class="sidebar-link" onclick="showSection('ch2-cyl')">2.2 Цилиндр и плунжер</div>
+      <div class="sidebar-link" onclick="showSection('ch2-gap')">2.3 Зазор плунжера</div>
+      <div class="sidebar-link" onclick="showSection('ch2-mat')">2.4 Материалы деталей</div>
+      <div class="sidebar-link" onclick="showSection('ch2-spec')">2.5 Спецусловия</div>
+      <div class="sidebar-link" onclick="showSection('ch2-order')">2.6 Оформление заказа</div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-title">Технические данные</div>
-      <div class="sidebar-link" onclick="showSection('flow')"> Подача насосов</div>
-      <div class="sidebar-link" onclick="showSection('cylinders')"> Цилиндры и плунжеры</div>
-      <div class="sidebar-link" onclick="showSection('valves')"> Клапаны</div>
-      <div class="sidebar-link" onclick="showSection('shoes')"> Якорные башмаки</div>
+      <div class="sidebar-cat">Технические данные</div>
+      <div class="sidebar-link" onclick="showSection('flow')">Подача насосов</div>
+      <div class="sidebar-link" onclick="showSection('cylinders')">Цилиндры и плунжеры</div>
+      <div class="sidebar-link" onclick="showSection('valves')">Клапаны</div>
+      <div class="sidebar-link" onclick="showSection('shoes')">Якорные башмаки</div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-title">Эксплуатация</div>
-      <div class="sidebar-link" onclick="showSection('operation')"> Руководство</div>
-      <div class="sidebar-link" onclick="showSection('calc')"> Расчёты</div>
+      <div class="sidebar-cat">Эксплуатация</div>
+      <div class="sidebar-link" onclick="showSection('operation')">Руководство</div>
+      <div class="sidebar-link" onclick="showSection('calc')">Расчёты</div>
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- КОНТЕНТ -->
   <main class="content">
 
-    <!-- ===== OVERVIEW ===== -->
+    <!-- ОБЗОР -->
     <div id="sec-overview" class="section visible">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Руководство по эксплуатации</div>
         <div class="section-title">Глубинные штанговые насосы</div>
         <div class="section-desc">ОАО «Ижнефтемаш» · Лицензия Шеллер-Блекманн (SBS) · Производство с 1994 года по стандарту API Спецификация 11АХ</div>
       </div>
-
       <div class="cards">
         <div class="card">
           <div class="card-title">Производитель</div>
@@ -758,7 +785,7 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         </div>
         <div class="card">
           <div class="card-title">Типы насосов</div>
-          <div class="card-body">Вставные и трубные.</div>
+          <div class="card-body">Вставные (R) и трубные (T). 11 типов по API.</div>
         </div>
         <div class="card">
           <div class="card-title">Условия работы</div>
@@ -769,145 +796,122 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           <div class="card-body">H₂S до 50 мг/л · pH 4,2–8 · Минерализация до 10 г/л · Свободный газ на приёме до 10%</div>
         </div>
         <div class="card">
-          <div class="card-title">11 типов по API</div>
-        </div>
-        <div class="card">
           <div class="card-title">Поставка</div>
           <div class="card-body">Деревянная тара до 5000 кг. Консервация 12 месяцев. Башмаки и фильтры — отдельный заказ.</div>
         </div>
+        <div class="card">
+          <div class="card-title">Стандарт</div>
+          <div class="card-body">API Спецификация 11АХ. Резьбы по API и ГОСТ 633-80. Материалы по ГОСТ и API.</div>
+        </div>
       </div>
-
       <div class="sub-title">Структура обозначения насоса по API</div>
-
       <div class="marking-box">
         <div class="marking-example">20–125 RHBM 10–4–1.5–1.5</div>
         <div class="marking-parts">
           <div class="marking-part">
             <div class="mp-code c1">20</div>
-            <div class="mp-label">Номинальный диаметр НКТ
-            <br>15 = 48,3 мм<br>20 = 60,3 мм<br>25 = 73,0 мм<br>30 = 88,9 мм<br>40 = 114,3 мм</div>
+            <div class="mp-label">Номинальный диаметр НКТ<br>15=48,3мм · 20=60,3мм<br>25=73,0мм · 30=88,9мм</div>
           </div>
-          <div class="marking-part" style="line-height:60px;color:#555;font-size:18px;">–</div>
+          <div class="marking-part"><div class="mp-sep">–</div></div>
           <div class="marking-part">
             <div class="mp-code c2">125</div>
-            <div class="mp-label">Внутр. диаметр насоса (номинальный размер)
-              <br>106 = 27,0 мм<br>125 = 31,8 мм<br>150 = 38,1 мм<br>175 = 44,5 мм<br>225 = 57,2 мм<br>275 = 69,9 мм<br>375 = 95,3 мм</div>
+            <div class="mp-label">Внутр. диаметр насоса<br>106=27,0мм · 125=31,8мм<br>150=38,1мм · 175=44,5мм<br>225=57,2мм · 275=69,9мм</div>
           </div>
           <div class="marking-part">
-            <div class="mp-code c3">R</div>
+            <div class="mp-code c1">R</div>
             <div class="mp-label">Тип насоса<br>R = вставной<br>T = трубный</div>
           </div>
           <div class="marking-part">
-            <div class="mp-code c3">H</div>
+            <div class="mp-code c6">H</div>
             <div class="mp-label">Тип цилиндра<br>H = толстост.<br>W = тонкост.</div>
           </div>
           <div class="marking-part">
             <div class="mp-code c4">B</div>
-            <div class="mp-label">Расположение замка<br>A = верхнее<br>B = нижнее<br>T = нижн. с подв.цил.</div>
+            <div class="mp-label">Расположение замка<br>A = верхнее<br>B = нижнее<br>T = нижн. с подв. цил.</div>
           </div>
           <div class="marking-part">
             <div class="mp-code c5">M</div>
             <div class="mp-label">Тип крепления<br>M = механ.<br>C = манжетное</div>
           </div>
-          <div class="marking-part" style="line-height:60px;color:#555;font-size:18px;"> </div>
+          <div class="marking-part" style="display:flex;align-items:center;padding-bottom:40px;"><div class="mp-sep"> </div></div>
           <div class="marking-part">
             <div class="mp-code c6">10</div>
-            <div class="mp-label">Длина цилиндра<br>(футы)</div>
+            <div class="mp-label">Длина цилиндра, футы</div>
           </div>
-          <div class="marking-part" style="line-height:60px;color:#555;font-size:18px;">–</div>
+          <div class="marking-part"><div class="mp-sep">–</div></div>
           <div class="marking-part">
             <div class="mp-code c6">4</div>
-            <div class="mp-label">Номинальная длина плунжера<br>(футы)</div>
+            <div class="mp-label">Длина плунжера, футы</div>
           </div>
-          <div class="marking-part" style="line-height:60px;color:#555;font-size:18px;">–</div>
+          <div class="marking-part"><div class="mp-sep">–</div></div>
           <div class="marking-part">
-            <div class="mp-code c7">1.5</div>
-            <div class="mp-label">Длина верхнего<br>удлинтеля</div>
+            <div class="mp-code c6">1.5</div>
+            <div class="mp-label">Верхний удлинитель, футы</div>
           </div>
-          <div class="marking-part" style="line-height:60px;color:#555;font-size:18px;">–</div>
+          <div class="marking-part"><div class="mp-sep">–</div></div>
           <div class="marking-part">
-            <div class="mp-code c7">1.5</div>
-            <div class="mp-label">Длина нижнего<br>удлинителя</div>
+            <div class="mp-code c6">1.5</div>
+            <div class="mp-label">Нижний удлинитель, футы</div>
           </div>
         </div>
       </div>
-
-      <div class="info-block gold">
+    </div>
+          <div class="info-block grey">
         <strong>Пример:</strong> Насос 20-125 RHBM 10-4-1,5-1,5 — вставной, толстостенный цилиндр, нижнее механическое крепление, НКТ 60,3 мм, диаметр 31,8 мм, цилиндр 10', плунжер 4', удлинители по 1,5'.
       </div>
-    </div>
 
-    <!-- ===== TYPES ===== -->
+    <!-- ТИПЫ НАСОСОВ -->
     <div id="sec-types" class="section">
-      <div class="section-header">
-        <div class="section-tag">Конструкция</div>
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Раздел 1</div>
         <div class="section-title">Типы насосов</div>
-        <div class="section-desc">Классификация по исполнению цилиндра, расположению замковой опоры и типу крепления</div>
+        <div class="section-desc">Заводом изготавливаются типы RHA, RHB, RHT, TH с внутренним диаметром от 27,0 до 69,9 мм.</div>
       </div>
-
-      <div class="sub-title">Вставные насосы (R)</div>
       <div class="pump-types">
         <div class="pump-type-card">
           <div class="ptc-name">RHA</div>
-          <div class="ptc-full">Неподвижный цилиндр · Верхний замок</div>
-          <div class="ptc-desc">Крепление: механическое (M) или манжетное (C). Лучший выбор при содержании песка. Ограничение: до 2100 м.</div>
+          <div class="ptc-full">Вставной · Верхний замок</div>
+          <div class="ptc-desc">Верхнее механическое или манжетное крепление. Рекомендуется при повышенном содержании песка — предотвращает застревание.</div>
         </div>
         <div class="pump-type-card">
           <div class="ptc-name">RHB</div>
-          <div class="ptc-full">Неподвижный цилиндр · Нижний замок</div>
-          <div class="ptc-desc">Механическое (M) или манжетное (C) крепление. Оптимален для больших дебитов на малых глубинах и искривлённых скважин.</div>
+          <div class="ptc-full">Вставной · Нижний замок</div>
+          <div class="ptc-desc">Нижнее механическое или манжетное крепление. Основной тип для большинства условий скважин.</div>
         </div>
         <div class="pump-type-card">
           <div class="ptc-name">RHT</div>
-          <div class="ptc-full">Подвижный цилиндр · Нижний замок</div>
-          <div class="ptc-desc">Только механическое крепление. Для неглубоких скважин с высоким уровнем нефти и повышенным содержанием песка.</div>
+          <div class="ptc-full">Вставной · Нижний + подвесной цилиндр</div>
+          <div class="ptc-desc">Подвижный цилиндр, фиксированный плунжер. Для скважин с высокой вязкостью и абразивом.</div>
+        </div>
+        <div class="pump-type-card">
+          <div class="ptc-name">TH</div>
+          <div class="ptc-full">Трубный · Толстостенный цилиндр</div>
+          <div class="ptc-desc">Цилиндр является частью НКТ. Наибольший внутренний диаметр при данном размере НКТ. Подъём — полная труба.</div>
+        </div>
+        <div class="pump-type-card">
+          <div class="ptc-name">RWA / RWB</div>
+          <div class="ptc-full">Вставной · Тонкостенный цилиндр</div>
+          <div class="ptc-desc">Цилиндр из тонкостенной трубки. Применяется при необходимости большего диаметра плунжера при ограниченном диаметре НКТ.</div>
         </div>
       </div>
+      <div class="info-block grey">
+        <strong>Рекомендация:</strong> Трубной насос не рекомендуется при высоком газосодержании на приёме — большой мёртвый объём снижает эффективность клапана.
+      </div>
+    </div>
 
+    <!-- 2.1 ВЫБОР ТИПА НАСОСА -->
+    <div id="sec-ch2-type" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.1</div>
+        <div class="section-title">Выбор типа насоса</div>
+        <div class="section-desc">Диаметр НКТ определяет допустимые типы и размеры насосов.</div>
+      </div>
       <div class="info-block">
-        <strong>Преимущество вставных насосов:</strong> подъём и спуск без извлечения колонны НКТ — экономия времени бригады более 50%.
+        В настоящее время заводом изготавливаются наиболее широко применяемые типы: <strong>RHA, RHB, RHT, TH</strong> с внутренним диаметром от 27,0 до 69,9 мм (от 20-106 до 30-275 включительно).
       </div>
-
-      <div class="info-block green">
-        <strong>Манжетное крепление (C)</strong> рекомендуется при: высоком газовом факторе · искривлённых скважинах · повышенной коррозионной активности
-      </div>
-
-      <div class="sub-title">Когда применять верхнее крепление (RHA)</div>
-      <ul class="check-list">
-        <li>Среднее и высокое содержание песка</li>
-        <li>Среднее содержание газа, глубина до 1500 м</li>
-        <li>Сероводород (H₂S), глубина до 1500 м</li>
-        <li>Двуокись углерода (CO₂), глубина до 2000 м</li>
-        <li><strong>Не рекомендуется глубже 2100 м</strong></li>
-      </ul>
-
-      <div class="sub-title">Когда применять нижнее крепление (RHB)</div>
-      <ul class="check-list">
-        <li>Высокий дебит, глубина до 900 м</li>
-        <li>Низкий уровень нефти, глубина 900–2000 м</li>
-        <li>Соленая вода, глубина до 1500 м</li>
-        <li>Среднее содержание газа, глубина до 1500 м</li>
-        <li>Искривлённые скважины</li>
-      </ul>
-
-      <div class="sub-title">Трубные насосы (TH)</div>
-
-      <div class="two-col">
-        <div class="info-block">
-          <strong>✅ Преимущества:</strong><br>
-          · Наибольшая подача при одном диаметре НКТ<br>
-          · Простая конструкция<br>
-          · Для высокодебитных скважин малой глубины
-        </div>
-        <div class="info-block">
-          <strong>⚠ Недостатки:</strong><br>
-          · При замене — подъём всей колонны НКТ<br>
-          · Не рекомендуется для газированных жидкостей<br>
-          · При глубоком спуске — потери хода из-за деформаций штанг
-        </div>
-      </div>
-
-      <div class="sub-title">Таблица 9 — Выбор типа и размера по НКТ</div>
+      <div class="sub-title">Таблица 9 — Выбор по диаметру НКТ</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -921,199 +925,211 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           <tbody>
             <tr>
               <td><strong>Вставной RH</strong><br><span class="td-sub">толстостенный цилиндр</span></td>
-              <td><span class="td-mono">20–106<br>20–125</span></td>
-              <td><span class="td-mono">25–150<br>25–175</span></td>
+              <td><span class="td-mono">20–106 · 20–125</span></td>
+              <td><span class="td-mono">25–150 · 25–175</span></td>
               <td><span class="td-mono">30–225</span></td>
             </tr>
             <tr>
               <td><strong>Трубный TH</strong></td>
-              <td><span class="td-mono">20–125<br>20–175</span></td>
+              <td><span class="td-mono">20–125 · 20–175</span></td>
               <td><span class="td-mono">25–225</span></td>
               <td><span class="td-mono">30–275</span></td>
             </tr>
           </tbody>
         </table>
       </div>
+    </div>
 
-      <div class="info-block gold">
-        <strong>Специальные исполнения:</strong> По заказу потребителей якорные башмаки насосов RH 20-106, 20-125 и верхние муфты насосов ТН 20-125, 20-175 могут быть изготовлены увеличенными для установки в НКТ 73,0 мм (2 7/8”) вместо 60,3 мм (2 3/8”). В этом случае обозначение трубных насосов (ТН) - 25-125 и 25-175. Могут быть изготовлены также трубные насосы 15-125 ТНМ для установки в колонне НКТ 48,3 мм (колонна штанг – ШН16).
+    <!-- 2.2 ЦИЛИНДР И ПЛУНЖЕР -->
+    <div id="sec-ch2-cyl" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.2</div>
+        <div class="section-title">Цилиндр и плунжер</div>
+      </div>
+      <div class="priority-row">
+        <div class="priority-item">
+          <div class="pi-num">1</div>
+          <div class="pi-label">Длина хода</div>
+          <div class="pi-sub">Основной способ увеличить подачу</div>
+        </div>
+        <div class="priority-item">
+          <div class="pi-num">2</div>
+          <div class="pi-label">Число качаний</div>
+          <div class="pi-sub">Второй по эффективности</div>
+        </div>
+        <div class="priority-item">
+          <div class="pi-num">3</div>
+          <div class="pi-label">Диаметр насоса</div>
+          <div class="pi-sub">Ограничен диаметром НКТ</div>
+        </div>
+      </div>
+      <div class="info-block">
+        Стандартные длины плунжеров: <strong>3, 4, 5, 6 футов + 3 дюйма</strong>.<br>
+        Завод выпускает: цельные 4' и 5', составные 6', 9', 10'.<br>
+        Стандартные длины цилиндров вставных: <strong>8–30 футов</strong> (шаг 2'). Трубных: <strong>6–30 футов</strong>.
       </div>
     </div>
 
-    <!-- ===== SELECTION ===== -->
-    <div id="sec-selection" class="section">
-      <div class="section-header">
-        <div class="section-tag">Раздел 2</div>
-        <div class="section-title">Выбор насоса</div>
-        <div class="section-desc">Алгоритм и критерии выбора типа, размера, длин цилиндра и плунжера</div>
+    <!-- 2.3 ЗАЗОР ПЛУНЖЕРА -->
+    <div id="sec-ch2-gap" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.3</div>
+        <div class="section-title">Зазор плунжера</div>
+        <div class="section-desc">Зазор между плунжером и цилиндром определяет уплотнение и применимость при разных условиях.</div>
       </div>
-
-      <div class="info-block">
-        <strong>Выбор насоса включает определение:</strong><br>
-        1. Тип насоса — по диаметру НКТ, глубине, дебиту, типу скважины<br>
-        2. Материалы деталей — по коррозионности и абразивности среды<br>
-        3. Зазор плунжер–цилиндр — по вязкости и содержанию твёрдых веществ<br>
-        4. Длина плунжера — по вязкости, зазору и глубине отбора
-      </div>
-
-      <div class="sub-title">Выбор длины плунжера</div>
-      <div class="info-block green">
-        <strong>Правило:</strong> 1 фут (304,8 мм) на 380–400 м высоты напора.<br>
-        · Плунжер 4 фута (1295 мм) → напор до <strong>1500 м</strong><br>
-        · Плунжер 5 футов (1600 мм) → напор до <strong>2000 м</strong><br>
-        · Максимальная рекомендуемая длина — <strong>6 футов</strong> (условие смазки)
-      </div>
-
-      <div class="info-block">
-        <strong>Зазоры для вставных насосов RHA/RHB:</strong> держатель седла нагнетательного клапана / всасывающий клапан в нижней точке — <strong>25÷75 мм</strong>. Зазор от упора — <strong>50÷100 мм</strong>. Потери хода за счёт упругих деформаций — <strong>200÷500 мм</strong>.
+      <div class="fit-grid">
+        <div class="fit-item optimal"><div class="fi-code">Fit-1</div><div class="fi-val">0,025</div><div class="fi-range">мм — наименьший</div></div>
+        <div class="fit-item optimal"><div class="fi-code">Fit-2</div><div class="fi-val">0,051</div><div class="fi-range">мм</div></div>
+        <div class="fit-item optimal"><div class="fi-code">Fit-3</div><div class="fi-val">0,076</div><div class="fi-range">мм — стандарт</div></div>
+        <div class="fit-item"><div class="fi-code">Fit-4</div><div class="fi-val">0,102</div><div class="fi-range">мм</div></div>
+        <div class="fit-item"><div class="fi-code">Fit-5</div><div class="fi-val">0,152</div><div class="fi-range">мм — наибольший</div></div>
       </div>
       <div class="info-block">
-        <strong>Зазор трубных насосов THM:</strong> ловильная втулка / ловильная цапфа в нижней точке — <strong>50÷100 мм</strong>.
-      </div>
-
-      <div class="sub-title">Рекомендации по высоковязкой нефти и газу</div>
-      <ul class="check-list">
-        <li><strong>Вязкая нефть:</strong> меньший шарик клапана или утяжелённый (карбид вольфрама), увеличенный зазор, минимальное число ходов, максимальный ход плунжера</li>
-        <li><strong>Высокое содержание песка:</strong> применять RHA (верхний замок предотвращает застревание). У RHB — уплотнение под направляющей штока</li>
-        <li><strong>Газированная жидкость:</strong> максимальный ход, минимальный зазор плунжера, максимальная глубина подвески, газовый якорь, специальные исполнения насосов</li>
-      </ul>
-    </div>
-
-    <!-- ===== CLEARANCE ===== -->
-    <div id="sec-clearance" class="section">
-      <div class="section-header">
-        <div class="section-tag">Раздел 2.3</div>
-        <div class="section-title">Зазоры плунжера</div>
-        <div class="section-desc">Выбор группы посадки (Fit) в зависимости от условий среды</div>
-      </div>
-
-      <div class="info-block">
-        Зазор влияет на: <strong>утечки нефти</strong> · <strong>смазку плунжера</strong> · <strong>проникновение частиц песка</strong> · <strong>свободу движения</strong><br><br>
-        Минимальный зазор = максимальный КПД, но требуется достаточная смазка (≥2% утечки).
-      </div>
-
-      <div class="sub-title">Таблица 6 — Группы посадок</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Группа посадки</th>
-              <th>Номинальный зазор, мм</th>
-              <th>Диапазон зазора, мм</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><span class="td-mono">Fit-1</span></td><td>0,025</td><td>0,025 – 0,088</td></tr>
-            <tr><td><span class="td-mono">Fit-2</span></td><td>0,050</td><td>0,050 – 0,113</td></tr>
-            <tr class="highlight"><td><span class="td-mono">Fit-3</span></td><td>0,075</td><td>0,075 – 0,138</td></tr>
-            <tr><td><span class="td-mono">Fit-4</span></td><td>0,100</td><td>0,100 – 0,163</td></tr>
-            <tr><td><span class="td-mono">Fit-5</span></td><td>0,125</td><td>0,125 – 0,188</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sub-title">Таблица 13 — Рекомендуемые зазоры по диаметру (Шеллер-Блекманн)</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Диаметр насоса</th>
-              <th>Рекомендуемые группы посадки</th>
-              <th>Оптимальная</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>1 1/16" — 27,0 мм (размер 106)</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td>1 1/4" — 31,8 мм (размер 125)</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td>1 1/2" — 38,1 мм (размер 150)</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td>1 3/4" — 44,5 мм (размер 175)</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td>2 1/4" — 57,2 мм (размер 225)</td><td>Fit-2, Fit-3, Fit-4</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td>2 3/4" — 69,9 мм (размер 275)</td><td>Fit-3, Fit-4, Fit-5</td><td><span class="badge badge-b">Fit-3</span></td></tr>
-          </tbody>
-        </table>
+        <strong>Fit-1 / Fit-2:</strong> Маловязкая нефть, минимальные потери утечки.<br>
+        <strong>Fit-3:</strong> Стандарт — большинство условий.<br>
+        <strong>Fit-4 / Fit-5:</strong> Высоковязкая нефть, высокое содержание песка.
       </div>
     </div>
 
-    <!-- ===== MATERIALS ===== -->
-    <div id="sec-materials" class="section">
-      <div class="section-header">
-        <div class="section-tag">Раздел 2.4</div>
+    <!-- 2.4 МАТЕРИАЛЫ -->
+    <div id="sec-ch2-mat" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.4</div>
         <div class="section-title">Материалы деталей</div>
-        <div class="section-desc">Таблица стойкости деталей насосов в различных скважинных условиях (Таблица 14)</div>
+        <div class="section-desc">Таблица выбора клапанных материалов в зависимости от состава скважинной жидкости.</div>
       </div>
-
-      <div class="two-col">
-        <div>
-          <div class="sub-title">Цилиндры</div>
-          <ul class="check-list">
-            <li><strong>CR</strong> — углеродистая сталь + хром. Твёрдость ≥900 HV. Длина до 16 футов.</li>
-            <li><strong>HN</strong> — легированная сталь 38Х2МЮА + ионное азотирование. Твёрдость ≥822 HK. Глубина 0,3–0,5 мм. Длина до 14 футов.</li>
-          </ul>
-        </div>
-        <div>
-          <div class="sub-title">Плунжеры и клапаны</div>
-          <ul class="check-list">
-            <li><strong>T</strong> — плунжер: сталь 17Г1С + твердосплавное напыление. Твёрдость ≥595 HV.</li>
-            <li><strong>SS</strong> — клапан: нержавеющая сталь 95Х18. Для средних условий.</li>
-            <li><strong>ST</strong> — клапан: стеллит (Co+Cr+W). Для абразива и коррозии.</li>
-            <li><strong>TC1/TC3</strong> — карбид вольфрама / карбид титана. Максимальная стойкость.</li>
-          </ul>
-        </div>
+      <div class="legend-row">
+        <span><span class="badge badge-a">A</span> — рекомендуется</span>
+        <span><span class="badge badge-b">B</span> — приемлемо</span>
+        <span><span class="badge badge-c">C</span> — ограниченно</span>
+        <span><span class="badge badge-x">X</span> — не применять</span>
       </div>
-
-      <div style="margin-bottom:10px;font-size:13px;color:var(--muted);">
-        <span class="badge badge-a">A</span> — стоек в данных условиях &nbsp;
-        <span class="badge badge-b">B</span> — слабая коррозия/эрозия, возможно применение &nbsp;
-        <span class="badge badge-c">C</span> — очень сильная коррозия, недопустимо &nbsp;
-        <span class="badge badge-x">X</span> — не применять
-      </div>
-
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Среда / условия</th>
-              <th>Цилиндр CR</th>
-              <th>Цилиндр HN</th>
-              <th>Плунжер CR</th>
-              <th>Плунжер T</th>
-              <th>Клапан SS</th>
-              <th>Клапан ST</th>
+              <th>Условие</th><th>SS-SS</th><th>SS-ST</th><th>ST-ST</th><th>TC1-SS</th><th>TC1-TC1</th><th>TC3-TC3</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>1. Некоррозионная</td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>2. Некоррозионная + абразив</td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr class="gshn-section-head"><td colspan="7">СЕРОВОДОРОД (H₂S)</td></tr>
+            <tr><td>1. Без агрессивной среды</td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr><td>2. Без агрессивной + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>3. Сильно активная H₂S</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>4. Сильная H₂S + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>5. Умеренная H₂S</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>6. Умеренная H₂S + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr class="gshn-section-head"><td colspan="7">УГЛЕКИСЛЫЙ ГАЗ (CO₂)</td></tr>
             <tr><td>7. Сильно активная CO₂</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>8. Сильная CO₂ + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>9. Умеренная CO₂</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>10. Умеренная CO₂ + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr class="gshn-section-head"><td colspan="7">КОМБИНАЦИИ H₂S + CO₂</td></tr>
             <tr><td>11. Сильная H₂S + CO₂</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>12. Сильная H₂S + CO₂ + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>13. Умеренная H₂S + CO₂</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>14. Умеренная H₂S + CO₂ + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr class="gshn-section-head"><td colspan="7">СОЛЕВЫЕ РАСТВОРЫ</td></tr>
             <tr><td>15. Сильный солевой раствор</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>16. Сильный солевой + абразив</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>17. Умеренный солевой раствор</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
             <tr><td>18. Умеренный солевой + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
+            <tr class="gshn-section-head"><td colspan="7">ПРОЧИЕ</td></tr>
             <tr><td>19. Кислородосодержащая среда</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ===== FLOW ===== -->
+    <!-- 2.5 СПЕЦУСЛОВИЯ -->
+    <div id="sec-ch2-spec" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.5</div>
+        <div class="section-title">Спецусловия откачки</div>
+        <div class="section-desc">Рекомендации по откачке высоковязкой нефти, нефти с повышенным содержанием песка и газа.</div>
+      </div>
+      <div class="sub-title">Высоковязкая нефть</div>
+      <div class="info-block">
+        <strong>Модификации для увеличения проходного сечения:</strong>
+        <ul class="check-list" style="margin-top:10px;">
+          <li>Клапанные шарики <strong>меньшего размера</strong> или <strong>утяжелённые</strong>, например из карбида вольфрама</li>
+          <li><strong>Увеличенные всасывающие клапаны</strong> (для трубных насосов)</li>
+          <li><strong>Увеличенный зазор</strong> между плунжером и цилиндром насоса</li>
+        </ul>
+      </div>
+      <div class="info-block green">
+        <strong>Режим работы:</strong> небольшое число ходов + <strong>максимальная длина хода плунжера</strong>
+      </div>
+      <div class="sub-title">Повышенное содержание песка</div>
+      <div class="two-col">
+        <div class="info-block green">
+          <strong>RHA (верхний замок) — рекомендуется:</strong><br>
+          Верхний замок предотвращает застревание насоса от оседания песка между НКТ и цилиндром.
+        </div>
+        <div class="info-block">
+          <strong>RHB (нижний замок):</strong><br>
+          Рекомендуется предусматривать <strong>уплотнение под направляющей штока</strong>, чтобы насос не застревал в отложениях песка.
+        </div>
+      </div>
+      <div class="sub-title">Повышенное газосодержание</div>
+      <ul class="check-list">
+        <li><strong>Максимальный ход плунжера</strong> и точная посадка (максимально близко к всасывающему клапану) — для уменьшения вредного пространства</li>
+        <li><strong>Максимальная глубина подвески</strong> — там меньше содержание свободного газа</li>
+        <li><strong>Газовый или газопесочный якорь</strong> для сепарации газа</li>
+        <li>Специальные исполнения: <strong>двухступенчатые насосы</strong>, с управляемым нагнетательным клапаном, с боковым всасывающим клапаном</li>
+      </ul>
+      <div class="info-block grey">
+        <strong>Трубной насос при газе — не рекомендуется.</strong> Большой мёртвый объём в нижней части хода создаёт слабую степень сжатия и снижает эффективность клапана.
+      </div>
+    </div>
+
+    <!-- 2.6 ОФОРМЛЕНИЕ ЗАКАЗА -->
+    <div id="sec-ch2-order" class="section">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
+        <div class="section-tag">Глава 2 · Раздел 2.6</div>
+        <div class="section-title">Оформление заказа</div>
+        <div class="section-desc">Полный перечень параметров для оформления заявки на насос.</div>
+      </div>
+      <div class="order-steps">
+        <div class="order-step"><div class="order-step-body"><strong>Диаметр НКТ, диаметр и тип насоса</strong><br>Например: 20–125 RHAM (НКТ 60,3 мм, диаметр 31,8 мм, вставной, толстостенный цилиндр, верхнее механическое крепление)</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Длину цилиндра, плунжера и удлинителей</strong> (в футах) или требуемый <strong>ход плунжера</strong> (в метрах)<br>Например: 10–4–1,5–1,5 (цилиндр 10', плунжер 4', удлинители по 1,5')</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Исполнение цилиндра</strong><br><strong>HN</strong> — легированная сталь + азотирование · <strong>CR</strong> — углеродистая сталь + хромирование</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Исполнение плунжера</strong><br><strong>T</strong> — легированная сталь + твердосплавное напыление</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Материал седел и шариков клапанов</strong><br><strong>SS</strong> — нерж. сталь · <strong>ST</strong> — стеллит · <strong>TC1</strong> — карбид вольфрама · <strong>TC3</strong> — карбид титана</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Зазор между плунжером и цилиндром</strong><br><strong>Fit-1</strong> … <strong>Fit-5</strong> (см. раздел 2.3)</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Глубину установки насоса</strong> (напор, м)</div></div>
+        <div class="order-step"><div class="order-step-body"><strong>Дополнительно для вставных насосов:</strong><br>Вид крепления: по API · по ОСТ (опора ОМ-60/ОМ-73) · специальное («Конус в конус»)<br>Тип и необходимость поставки <strong>якорного башмака</strong><br>Необходимость поставки <strong>фильтров</strong> (3 мм) на приём насоса</div></div>
+      </div>
+      <div class="sub-title">Пример полного обозначения</div>
+      <div class="formula-box">
+        <div class="formula-main">20–125 RHBM 10–4–1,5–1,5</div>
+        <div class="formula-vars">
+          <span class="formula-var">20–125</span><span>НКТ 60,3 мм (2 3/8"), диаметр насоса 31,8 мм</span>
+          <span class="formula-var">RH</span><span>Вставной, толстостенный цилиндр</span>
+          <span class="formula-var">BM</span><span>Нижнее механическое крепление</span>
+          <span class="formula-var">10</span><span>Цилиндр 10 футов (3,05 м)</span>
+          <span class="formula-var">4</span><span>Плунжер 4 фута (1,295 м)</span>
+          <span class="formula-var">1,5–1,5</span><span>Верхний и нижний удлинители по 1,5 фута (493 мм)</span>
+        </div>
+      </div>
+      <div class="info-block green">
+        <strong>Дополнительные опции по заказу:</strong> сдвоенные клапаны · длинноходовые составные цилиндры до 24' · боковые всасывающие клапаны БВК-32/44 · газовые якори 60/73/89 мм · фильтры ФС-60/92 и ФСП-73/89 · сливные клапаны СКОК · клапаны-отсекатели КОН
+      </div>
+    </div>
+
+    <!-- ПОДАЧА НАСОСОВ -->
     <div id="sec-flow" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Таблица 10</div>
         <div class="section-title">Подача насосов</div>
         <div class="section-desc">Идеальная подача при 10 ходах плунжера в минуту (м³/сут)</div>
       </div>
-
       <div class="formula-box">
         <div class="formula-main">V = 72,9 × 0,0001 × D² × H × N</div>
         <div class="formula-vars">
@@ -1123,17 +1139,11 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           <span class="formula-var">N</span><span>— число ходов плунжера, 1/мин</span>
         </div>
       </div>
-
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Размер насоса</th>
-              <th>Диаметр, мм</th>
-              <th>Ход 1800 мм</th>
-              <th>Ход 2500 мм</th>
-              <th>Ход 3000 мм</th>
-              <th>Ход 3500 мм</th>
+              <th>Размер насоса</th><th>Диаметр, мм</th><th>Ход 1800 мм</th><th>Ход 2500 мм</th><th>Ход 3000 мм</th><th>Ход 3500 мм</th>
             </tr>
           </thead>
           <tbody>
@@ -1146,33 +1156,24 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           </tbody>
         </table>
       </div>
-
       <div class="info-block">
         <strong>Приоритет увеличения подачи:</strong><br>
-        1. Увеличение <strong>длины хода</strong> плунжера<br>
-        2. Увеличение <strong>числа качаний</strong><br>
-        3. Увеличение <strong>диаметра</strong> насоса
+        1. Увеличение <strong>длины хода</strong> плунжера · 2. Увеличение <strong>числа качаний</strong> · 3. Увеличение <strong>диаметра</strong> насоса
       </div>
     </div>
 
-    <!-- ===== CYLINDERS ===== -->
+    <!-- ЦИЛИНДРЫ И ПЛУНЖЕРЫ -->
     <div id="sec-cylinders" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Раздел 1.5–1.6</div>
         <div class="section-title">Цилиндры и плунжеры</div>
       </div>
-
       <div class="sub-title">Таблица 3 — Цилиндры толстостенные</div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Тип насоса</th>
-              <th>Размер</th>
-              <th>Обозначение API</th>
-              <th>Внутр. диаметр, мм</th>
-              <th>Наружн. диаметр, мм</th>
-            </tr>
+            <tr><th>Тип насоса</th><th>Размер</th><th>Обозначение API</th><th>Внутр. диаметр, мм</th><th>Наружн. диаметр, мм</th></tr>
           </thead>
           <tbody>
             <tr><td rowspan="5"><strong>Вставной RH</strong></td><td class="td-mono">106</td><td>В12-106</td><td>26,988 +0,05</td><td>36,00 +0,25/-0,1</td></tr>
@@ -1187,7 +1188,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           </tbody>
         </table>
       </div>
-
       <div class="sub-title">Таблица 5 — Плунжеры 4-футовые (рабочая длина 1295 мм)</div>
       <div class="table-wrap">
         <table>
@@ -1204,7 +1204,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           </tbody>
         </table>
       </div>
-
       <div class="info-block">
         Стандартные длины плунжеров: <strong>3, 4, 5, 6 футов + 3 дюйма</strong>.<br>
         Завод выпускает: цельные 4' и 5', составные 6', 9', 10'.<br>
@@ -1212,31 +1211,27 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
       </div>
     </div>
 
-    <!-- ===== VALVES ===== -->
+    <!-- КЛАПАНЫ -->
     <div id="sec-valves" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Раздел 1.7</div>
         <div class="section-title">Клапаны</div>
       </div>
-
       <div class="cards">
         <div class="card">
-          <div class="card-icon">⚙️</div>
           <div class="card-title">SS — Нержавеющая сталь</div>
           <div class="card-body">Сталь 95Х18. Твёрдость седла 52–56 HRC, шарика 58–65 HRC. Для средних скважинных условий.</div>
         </div>
         <div class="card">
-          <div class="card-icon">🔶</div>
           <div class="card-title">ST — Стеллит</div>
           <div class="card-body">Сплав Co+Cr+W. Твёрдость 50–56 / 56–63 HRC. Для повышенного абразива и коррозии.</div>
         </div>
         <div class="card">
-          <div class="card-icon">💎</div>
           <div class="card-title">TC1 / TC3</div>
           <div class="card-body">Карбид вольфрама (TC1) / Карбид титана (TC3). Твёрдость 87–90 HRA. Исключительная абразивная и коррозионная стойкость.</div>
         </div>
       </div>
-
       <div class="sub-title">Таблица 8 — Размеры седел клапанов</div>
       <div class="table-wrap">
         <table>
@@ -1255,540 +1250,45 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
       </div>
     </div>
 
-    <!-- ===== SHOES ===== -->
+    <!-- ЯКОРНЫЕ БАШМАКИ -->
     <div id="sec-shoes" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Раздел 1.2 · Таблица 2</div>
         <div class="section-title">Якорные башмаки</div>
         <div class="section-desc">Замковые опоры вставных насосов. В комплект поставки не входят — заказываются отдельно.</div>
       </div>
-
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Обозначение API</th>
-              <th>Чертёж</th>
-              <th>Резьба НКТ</th>
-              <th>Усилие удержания, кН</th>
-              <th>∅ габ., мм</th>
-              <th>L, мм</th>
-              <th>Масса не более, кг</th>
-            </tr>
+            <tr><th>Обозначение API</th><th>Чертёж</th><th>Резьба НКТ</th><th>Усилие, кН</th><th>∅ габ., мм</th><th>L, мм</th><th>Масса, кг</th></tr>
           </thead>
           <tbody>
-            <tr><td colspan="7" style="background:var(--aged);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);">ВЕРХНЕЕ МЕХАНИЧЕСКОЕ КРЕПЛЕНИЕ</td></tr>
+            <tr class="gshn-section-head"><td colspan="7">ВЕРХНЕЕ МЕХАНИЧЕСКОЕ КРЕПЛЕНИЕ</td></tr>
             <tr><td class="td-mono">N 14-20</td><td>40116-ZUS</td><td>60 (2 3/8")</td><td>3,5 – 7,0</td><td>73,0</td><td>225</td><td>3,5</td></tr>
             <tr><td class="td-mono">N 14-25</td><td>40117-ZUS</td><td>73 (2 7/8")</td><td>4,0 – 8,0</td><td>88,9</td><td>240</td><td>5,5</td></tr>
-            <tr><td colspan="7" style="background:var(--aged);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);">НИЖНЕЕ МЕХАНИЧЕСКОЕ КРЕПЛЕНИЕ</td></tr>
+            <tr class="gshn-section-head"><td colspan="7">НИЖНЕЕ МЕХАНИЧЕСКОЕ КРЕПЛЕНИЕ</td></tr>
             <tr><td class="td-mono">N 12-20</td><td>32756</td><td>60 (2 3/8")</td><td>2,1 – 4,2</td><td>60,3</td><td>175</td><td>2,6</td></tr>
             <tr><td class="td-mono">N 12-25</td><td>32757</td><td>73 (2 7/8")</td><td>2,8 – 5,6</td><td>73,0</td><td>200</td><td>3,8</td></tr>
             <tr><td class="td-mono">N 12-30</td><td>32758</td><td>89 (3 1/2")</td><td>6,0 – 12,0</td><td>88,9</td><td>230</td><td>6,2</td></tr>
-            <tr><td colspan="7" style="background:var(--aged);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);">МАНЖЕТНОЕ КРЕПЛЕНИЕ (верхнее и нижнее)</td></tr>
+            <tr class="gshn-section-head"><td colspan="7">МАНЖЕТНОЕ КРЕПЛЕНИЕ</td></tr>
             <tr><td class="td-mono">N 11-20</td><td>32521</td><td>60 (2 3/8")</td><td>3,5 – 10,5</td><td>60,3</td><td>160</td><td>1,6</td></tr>
             <tr><td class="td-mono">N 11-25</td><td>32522</td><td>73 (2 7/8")</td><td>7,0 – 21,0</td><td>73,0</td><td>160</td><td>1,9</td></tr>
           </tbody>
         </table>
       </div>
-
       <div class="info-block">
         Все башмаки выполнены с <strong>модифицированными по ГОСТ 633-80</strong> резьбами под гладкие НКТ с невысаженными концами.
       </div>
     </div>
 
-    <!-- ===== 2.1 Выбор типа насоса ===== -->
-    <div id="sec-ch2-type" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.1</div>
-        <div class="section-title">Выбор типа насоса</div>
-        <div class="section-desc">Диаметр НКТ определяет допустимые типы и размеры насосов. Два основных типа по API: трубный (T) и вставной (R).</div>
-      </div>
-            <div class="info-block gold">
-        В настоящее время заводом изготавливаются
-наиболее широко применяемые типы насосов, это - <strong>RHA, RHB, RHT, TH</strong> с внутренним диаметром от 27,0 до 69,9 мм (от 20-106 до 30-275 включительно).
-      </div>
-
-      <div class="sub-title">Таблица 9 — Выбор по диаметру НКТ</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Тип насоса</th>
-              <th>НКТ 60,3 мм (2 3/8")</th>
-              <th>НКТ 73,0 мм (2 7/8")</th>
-              <th>НКТ 88,9 мм (3 1/2")</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Вставной RH</strong><br><span class="td-sub">толстостенный цилиндр</span></td>
-              <td><span class="td-mono">20–106<br>20–125</span></td>
-              <td><span class="td-mono">25–150<br>25–175</span></td>
-              <td><span class="td-mono">30–225</span></td>
-            </tr>
-            <tr>
-              <td><strong>Трубный TH</strong></td>
-              <td><span class="td-mono">20–125<br>20–175</span></td>
-              <td><span class="td-mono">25–225</span></td>
-              <td><span class="td-mono">30–275</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="info-block gold">
-        <strong>Специальные исполнения:</strong> Башмаки RH 20-106, 20-125 и верхние муфты ТН 20-125, 20-175 могут быть изготовлены увеличенными для НКТ 73,0 мм — тогда обозначение: 25-125 ТН, 25-175 ТН. Для НКТ 48,3 мм — насос 15-125 ТНМ (штанги ШН16).
-      </div>
-
-      <div class="sub-title">Три вида вставных насосов</div>
-      <div class="pump-types">
-        <div class="pump-type-card">
-          <div class="ptc-name">RHA</div>
-          <div class="ptc-full">Неподвижный цилиндр · Верхний замок</div>
-          <div class="ptc-desc">Крепление: механическое (M) или манжетное (C). Надёжная фиксация. Лучший выбор при содержании песка.</div>
-        </div>
-        <div class="pump-type-card">
-          <div class="ptc-name">RHB</div>
-          <div class="ptc-full">Неподвижный цилиндр · Нижний замок</div>
-          <div class="ptc-desc">Механическое (M) или манжетное (C) крепление. Для высокого дебита на малых глубинах и искривлённых скважин.</div>
-        </div>
-        <div class="pump-type-card">
-          <div class="ptc-name">RHT</div>
-          <div class="ptc-full">Подвижный цилиндр · Нижний замок</div>
-          <div class="ptc-desc">Только механическое крепление. Для неглубоких скважин с высоким уровнем нефти и повышенным содержанием песка.</div>
-        </div>
-      </div>
-
-      <div class="info-block green">
-        <strong>Ключевое преимущество вставных насосов:</strong> подъём и спуск без извлечения колонны НКТ — экономия времени подъёмника <strong>более 50%</strong> по сравнению с трубными.
-      </div>
-
-      <div class="two-col">
-        <div>
-          <div class="sub-title">Верхнее крепление (RHA)</div>
-          <ul class="check-list">
-            <li>Среднее и высокое содержание <strong>песка</strong></li>
-            <li>Среднее содержание <strong>газа</strong>, глубина до 1500 м</li>
-            <li><strong>H₂S</strong>, глубина до 1500 м</li>
-            <li><strong>CO₂</strong>, глубина до 2000 м</li>
-            <li style="color:var(--rust);"><strong>⚠ Глубже 2100 м — не рекомендуется</strong></li>
-          </ul>
-        </div>
-        <div>
-          <div class="sub-title">Нижнее крепление (RHB)</div>
-          <ul class="check-list">
-            <li>Высокий <strong>дебит</strong>, глубина до 900 м</li>
-            <li>Низкий уровень нефти, глубина 900–2000 м</li>
-            <li><strong>Соленая вода</strong>, глубина до 1500 м</li>
-            <li>Среднее содержание <strong>газа</strong>, до 1500 м</li>
-            <li><strong>Искривлённые</strong> скважины</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="info-block">
-        <strong>Манжетное крепление (C)</strong> рекомендуется при: большом газовом факторе · искривлённых скважинах · повышенной коррозионной активности
-      </div>
-
-      <div class="sub-title">Трубные насосы (TH) — сравнение</div>
-      <div class="two-col">
-        <div class="info-block green">
-          <strong>✅ Преимущества:</strong><br>
-          · Наибольшая подача при одном диаметре НКТ<br>
-          · Простая и жёсткая конструкция<br>
-          · Оптимальны для <strong>высокодебитных скважин малой глубины</strong>
-        </div>
-        <div class="info-block">
-          <strong>⚠ Недостатки:</strong><br>
-          · При каждой замене — <strong>подъём всей колонны НКТ</strong><br>
-          · <strong>Не применять</strong> для газированных жидкостей<br>
-          · Глубокая установка насоса приводит к <strong>потере хода</strong> плунжера из-за растяжения штанг и НКТ, <strong>снижая производительность</strong> по сравнению с вставными насосами меньшего размера.
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 2.2 Цилиндр и плунжер ===== -->
-    <div id="sec-ch2-cyl" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.2</div>
-        <div class="section-title">Выбор цилиндра и плунжера</div>
-        <div class="section-desc">Диаметр насоса, длины плунжера, цилиндра и удлинителей выбираются с учётом свойств жидкости, дебита и глубины спуска.</div>
-      </div>
-
-      <div class="sub-title">Формула идеальной подачи</div>
-      <div class="formula-box">
-        <div class="formula-main">V = 72,9 × 0,0001 × D² × H × N</div>
-        <div class="formula-vars">
-          <span class="formula-var">V</span><span>— идеальная подача, м³/сут</span>
-          <span class="formula-var">D</span><span>— диаметр плунжера, дюйм</span>
-          <span class="formula-var">H</span><span>— действительный ход плунжера, см</span>
-          <span class="formula-var">N</span><span>— число ходов плунжера, 1/мин</span>
-        </div>
-      </div>
-
-      <div class="sub-title">Приоритет увеличения подачи при форсированном отборе</div>
-      <div class="priority-row">
-        <div class="priority-item">
-          <div class="pi-num">1</div>
-          <div class="pi-label">Длина хода плунжера</div>
-          <div class="pi-sub">Увеличивать первым</div>
-        </div>
-        <div class="priority-item">
-          <div class="pi-num">2</div>
-          <div class="pi-label">Число качаний</div>
-          <div class="pi-sub">Увеличивать вторым</div>
-        </div>
-        <div class="priority-item">
-          <div class="pi-num">3</div>
-          <div class="pi-label">Диаметр насоса</div>
-          <div class="pi-sub">Только в последнюю очередь</div>
-        </div>
-      </div>
-
-      <div class="sub-title">Таблица 10 — Идеальная подача при 10 ходах в минуту, м³/сут</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Размер насоса</th>
-              <th>Ход 1800 мм</th>
-              <th>Ход 2500 мм</th>
-              <th>Ход 3000 мм</th>
-              <th>Ход 3500 мм</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td class="td-mono">106</td><td>14,8</td><td>20,6</td><td>24,7</td><td>28,8</td></tr>
-            <tr><td class="td-mono">125</td><td>20,5</td><td>28,5</td><td>34,2</td><td>39,9</td></tr>
-            <tr><td class="td-mono">150</td><td>29,5</td><td>41,0</td><td>49,2</td><td>57,4</td></tr>
-            <tr><td class="td-mono">175</td><td>40,2</td><td>55,8</td><td>66,9</td><td>78,0</td></tr>
-            <tr><td class="td-mono">225</td><td>66,4</td><td>92,3</td><td>110,7</td><td>129,1</td></tr>
-            <tr><td class="td-mono">275</td><td>99,2</td><td>137,8</td><td>165,4</td><td>192,9</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sub-title">Выбор длины плунжера</div>
-      <div class="info-block green">
-        <strong>Правило: 1 фут (304,8 мм) на 380–400 м высоты напора</strong><br><br>
-        · Плунжер <strong>4 фута</strong> (рабочая длина 1295 мм) → напор до <strong>1500 м</strong><br>
-        · Плунжер <strong>5 футов</strong> (рабочая длина 1600 мм) → напор до <strong>2000 м</strong><br>
-        · Максимальная рекомендуемая длина — <strong>6 футов</strong> (условие достаточной смазки)
-      </div>
-
-      <div class="sub-title">Конструктивные зазоры при установке</div>
-      <div class="two-col">
-        <div class="info-block">
-          <strong>Вставные насосы RHA, RHB:</strong><br>
-          · Зазор держатель седла / всасывающий клапан в нижней точке: <strong>25–75 мм</strong><br>
-          · Зазор от упора (переходник штока / направляющая): <strong>50–100 мм</strong><br>
-          · Потери хода на деформации штанг и НКТ: <strong>200–500 мм</strong>
-        </div>
-        <div class="info-block">
-          <strong>Трубные насосы THM:</strong><br>
-          · Зазор ловильная втулка / ловильная цапфа в нижней точке: <strong>50–100 мм</strong><br>
-          · Ход вверх конструктивно не ограничен
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 2.3 Зазор ===== -->
-    <div id="sec-ch2-gap" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.3</div>
-        <div class="section-title">Зазор плунжер–цилиндр</div>
-        <div class="section-desc">Выбор группы посадки (Fit) определяет утечки, смазку, проникновение песка и свободу движения плунжера.</div>
-      </div>
-
-      <div class="info-block">
-        <strong>Принцип:</strong> минимальный зазор = максимальный КПД. Но для смазки нужно не менее <strong>2% утечки нефти</strong>. Утечка прямо пропорциональна противодавлению и обратно пропорциональна длине плунжера и вязкости жидкости.
-      </div>
-
-      <div class="sub-title">Таблица 6 — Группы посадок</div>
-      <div class="fit-grid">
-        <div class="fit-item">
-          <div class="fi-code">Fit-1</div>
-          <div class="fi-val">0,025 мм</div>
-          <div class="fi-range">0,025–0,088</div>
-        </div>
-        <div class="fit-item optimal">
-          <div class="fi-code">Fit-2 ★</div>
-          <div class="fi-val">0,050 мм</div>
-          <div class="fi-range">0,050–0,113</div>
-        </div>
-        <div class="fit-item optimal">
-          <div class="fi-code">Fit-3 ★</div>
-          <div class="fi-val">0,075 мм</div>
-          <div class="fi-range">0,075–0,138</div>
-        </div>
-        <div class="fit-item">
-          <div class="fi-code">Fit-4</div>
-          <div class="fi-val">0,100 мм</div>
-          <div class="fi-range">0,100–0,163</div>
-        </div>
-        <div class="fit-item">
-          <div class="fi-code">Fit-5</div>
-          <div class="fi-val">0,125 мм</div>
-          <div class="fi-range">0,125–0,188</div>
-        </div>
-      </div>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:20px;">★ — наиболее рекомендуемые группы. Предельное отклонение для всех групп: +0,063 мм.</p>
-
-      <div class="sub-title">Таблица 13 — Рекомендуемые зазоры по диаметру (Шеллер-Блекманн)</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Условный размер</th>
-              <th>Диаметр, дюйм (мм)</th>
-              <th>Рекомендуемые группы</th>
-              <th>Оптимальная</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td class="td-mono">106</td><td>1 1/16" — 27,0 мм</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td class="td-mono">125</td><td>1 1/4" — 31,8 мм</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td class="td-mono">150</td><td>1 1/2" — 38,1 мм</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td class="td-mono">175</td><td>1 3/4" — 44,5 мм</td><td>Fit-2, Fit-3</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td class="td-mono">225</td><td>2 1/4" — 57,2 мм</td><td>Fit-2, Fit-3, Fit-4</td><td><span class="badge badge-b">Fit-2</span></td></tr>
-            <tr><td class="td-mono">275</td><td>2 3/4" — 69,9 мм</td><td>Fit-3, Fit-4, Fit-5</td><td><span class="badge badge-b">Fit-3</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sub-title">Таблица 11 — Номинальные диаметры цилиндров</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Условный размер</th><th>∅ внутреннего диаметра, мм</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="td-mono">106</td><td>26,988 <sup>+0,05</sup></td></tr>
-            <tr><td class="td-mono">125</td><td>31,75 <sup>+0,05</sup></td></tr>
-            <tr><td class="td-mono">150</td><td>38,10 <sup>+0,05</sup></td></tr>
-            <tr><td class="td-mono">175</td><td>44,45 <sup>+0,05</sup></td></tr>
-            <tr><td class="td-mono">225</td><td>57,15 <sup>+0,05</sup></td></tr>
-            <tr><td class="td-mono">275</td><td>69,85 <sup>+0,05</sup></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ===== 2.4 Материалы ===== -->
-    <div id="sec-ch2-mat" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.4</div>
-        <div class="section-title">Выбор материалов</div>
-        <div class="section-desc">Стойкость деталей насоса в различных скважинных условиях. Выбор материального исполнения решается совместно с изготовителем на основе опыта эксплуатации на данном месторождении.</div>
-      </div>
-
-      <div class="sub-title">Исполнения деталей</div>
-      <div class="two-col">
-        <div>
-          <div class="info-block">
-            <strong>Цилиндры:</strong><br>
-            <strong>CR</strong> — углеродистая сталь + хромирование. Твёрдость ≥900 HV (67 HRC), толщина покрытия ≥0,076 мм. Длина до 16 футов.<br><br>
-            <strong>HN</strong> — легированная сталь 38Х2МЮА + ионное азотирование. Твёрдость ≥822 HK (64 HRC), глубина 0,3–0,5 мм. Длина до 14 футов.
-          </div>
-          <div class="info-block">
-            <strong>Плунжеры:</strong><br>
-            <strong>T</strong> — сталь 17Г1С + твердосплавное напыление. Твёрдость ≥595 HV (55 HRC). Желобчатые. Высокая стойкость к коррозии и абразивному износу.
-          </div>
-        </div>
-        <div>
-          <div class="info-block">
-            <strong>Клапанные пары (седло + шарик):</strong><br>
-            <strong>SS</strong> — нержавеющая сталь 95Х18. Твёрдость: седло 52–56 HRC, шарик 58–65 HRC. Средние условия.<br><br>
-            <strong>ST</strong> — стеллит (Co+Cr+W). Твёрдость: седло 50–56 HRC, шарик 56–63 HRC. Повышенный абразив и коррозия.<br><br>
-            <strong>TC1</strong> — карбид вольфрама.<br>
-            <strong>TC3</strong> — карбид титана.<br>
-            Твёрдость 87–90 HRA. Исключительная абразивная и коррозионная стойкость.
-          </div>
-        </div>
-      </div>
-
-      <div class="legend-row">
-        <span><span class="badge badge-a">A</span> — стоек в данных условиях</span>
-        <span><span class="badge badge-b">B</span> — слабая коррозия/эрозия, применение возможно (напр. с ингибитором)</span>
-        <span><span class="badge badge-c">C</span> — очень сильная коррозия, применение недопустимо или крайне ограничено</span>
-        <span><span class="badge badge-x">X</span> — применять нельзя</span>
-      </div>
-
-      <div class="sub-title">Таблица 14 — Стойкость материалов к скважинным условиям</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Среда / условия</th>
-              <th>Цилиндр CR</th>
-              <th>Цилиндр HN</th>
-              <th>Плунжер CR</th>
-              <th>Плунжер T</th>
-              <th>Клапан SS</th>
-              <th>Клапан ST</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="gshn-section-head"><td colspan="7">НЕКОРРОЗИОННАЯ СРЕДА</td></tr>
-            <tr><td>1. Некоррозионная</td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>2. Некоррозионная + абразив</td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr class="gshn-section-head"><td colspan="7">СЕРОВОДОРОД (H₂S)</td></tr>
-            <tr><td>3. Сильно активная H₂S</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>4. Сильная H₂S + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td></tr>
-            <tr><td>5. Умеренная H₂S</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>6. Умеренная H₂S + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr class="gshn-section-head"><td colspan="7">ДИОКСИД УГЛЕРОДА (CO₂)</td></tr>
-             <tr><td>7. Сильно активная CO₂</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>8. Сильная CO₂ + абразив</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td></tr>
-            <tr><td>9. Умеренная CO₂</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>10. Умеренная CO₂ + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr class="gshn-section-head"><td colspan="7">H₂S + CO₂ СОВМЕСТНО</td></tr>
-            <tr><td>11. Сильная H₂S + CO₂</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>12. Сильная H₂S + CO₂ + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td></tr>
-            <tr><td>13. Умеренная H₂S + CO₂</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>14. Умеренная H₂S + CO₂ + абразив</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr class="gshn-section-head"><td colspan="7">СОЛЕВЫЕ РАСТВОРЫ</td></tr>
-             <tr><td>15. Сильный солевой раствор</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>16. Сильный солевой + абразив</td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td></tr>
-            <tr><td>17. Умеренный солевой раствор</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-x">-</span></td><td><span class="badge badge-x">-</span></td></tr>
-            <tr><td>18. Умеренный солевой + абразив</td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-x">-</span></td><td><span class="badge badge-x">-</span></td></tr>
-            <tr class="gshn-section-head"><td colspan="7">ПРОЧИЕ</td></tr>
-             <tr><td>19. Кислородосодержащая среда</td><td><span class="badge badge-x">X</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-c">C</span></td><td><span class="badge badge-b">B</span></td><td><span class="badge badge-a">A</span></td><td><span class="badge badge-a">A</span></td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- ===== 2.5 Спецусловия ===== -->
-    <div id="sec-ch2-spec" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.5</div>
-        <div class="section-title">Спецусловия откачки</div>
-        <div class="section-desc">Рекомендации по откачке высоковязкой нефти, нефти с повышенным содержанием песка и газа.</div>
-      </div>
-
-      <div class="sub-title">Высоковязкая нефть</div>
-      <div class="info-block gold">
-        <strong>Модификации для увеличения проходного сечения:</strong>
-        <ul class="check-list" style="margin-top:8px;">
-          <li>Клапанные шарики <strong>меньшего размера</strong> или <strong>утяжелённые</strong> например из карбида вольфрама</li>
-          <li><strong>Увеличенные всасывающие клапаны</strong> (для трубных насосов)</li>
-          <li><strong>Увеличенный зазор</strong> между плунжером и цилиндром насоса</li>
-        </ul>
-      </div>
-      <div class="info-block green">
-        <strong>Режим работы:</strong> небольшое число ходов + <strong>максимальная длина хода плунжера</strong>
-      </div>
-
-      <div class="sub-title">Повышенное содержание песка</div>
-      <div class="two-col">
-        <div class="info-block green">
-          <strong>RHA (верхний замок) — рекомендуется:</strong><br>
-          Верхний замок предотвращает застревание насоса от оседания песка между НКТ и цилиндром.
-        </div>
-        <div class="info-block gold">
-          <strong>RHB (нижний замок):</strong><br>
-          Рекомендуется предусматривать <strong>уплотнение под направляющей штока</strong>, чтобы насос не застревал в отложениях песка.
-        </div>
-      </div>
-
-      <div class="sub-title">Повышенное газосодержание</div>
-      <ul class="check-list">
-        <li><strong>Максимальный ход плунжера</strong> и точная посадка (максимально близко к всасывающему клапану) — для уменьшения вредного пространства</li>
-        <li><strong>Максимальная глубина подвески</strong> — там меньше содержание свободного газа</li>
-        <li><strong>Газовый или газопесочный якорь</strong> для сепарации газа</li>
-        <li>Специальные исполнения: <strong>двухступенчатые насосы</strong>, с управляемым нагнетательным клапаном, с боковым всасывающим клапаном</li>
-      </ul>
-
-      <div class="info-block">
-        <strong>⚠ Трубной насос при газе — не рекомендуется.</strong> Большой мёртвый объём в нижней части хода (узел всасывающего клапана + ловильное устройство) создаёт слабую степень сжатия и снижает эффективность клапана.
-      </div>
-    </div>
-
-    <!-- ===== 2.6 Оформление заказа ===== -->
-    <div id="sec-ch2-order" class="section">
-      <div class="section-header">
-        <div class="section-tag">Глава 2 · Раздел 2.6</div>
-        <div class="section-title">Оформление заказа</div>
-        <div class="section-desc">Полный перечень параметров, которые необходимо указать при оформлении заявки на насос.</div>
-      </div>
-
-      <div class="order-steps">
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Диаметр НКТ, диаметр и тип насоса</strong><br>
-            Например: 20–125 RHAM (НКТ 60,3 мм, диаметр 31,8 мм, вставной, толстостенный цилиндр, верхнее механическое крепление)
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Длину цилиндра, плунжера и удлинителей</strong> (в футах) <em>или</em> требуемый <strong>ход плунжера</strong> (в метрах)<br>
-            Например: 10–4–1,5–1,5 (цилиндр 10', плунжер 4', удлинители по 1,5')
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Исполнение цилиндра</strong><br>
-            <strong>HN</strong> — легированная сталь + азотирование &nbsp;·&nbsp; <strong>CR</strong> — углеродистая сталь + хромирование
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Исполнение плунжера</strong><br>
-            <strong>T</strong> — легированная сталь + твердосплавное напыление
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Материал седел и шариков клапанов</strong><br>
-            <strong>SS</strong> — нержавеющая сталь &nbsp;·&nbsp; <strong>ST</strong> — стеллит &nbsp;·&nbsp; <strong>TC1</strong> — карбид вольфрама &nbsp;·&nbsp; <strong>TC3</strong> — карбид титана
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Зазор между плунжером и цилиндром</strong><br>
-            <strong>Fit-1</strong> … <strong>Fit-5</strong> (см. раздел 2.3)
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Глубину установки насоса</strong> (напор, м)
-          </div>
-        </div>
-        <div class="order-step">
-          <div class="order-step-body">
-            <strong>Дополнительно для вставных насосов:</strong><br>
-            Вид крепления: <strong>по API</strong> · <strong>по ОСТ</strong> (опора ОМ-60/ОМ-73) · <strong>специальное</strong> («Конус в конус»)<br>
-            Тип и необходимость поставки <strong>якорного башмака</strong><br>
-            Необходимость поставки <strong>фильтров</strong> (3 мм) на приём насоса
-          </div>
-        </div>
-      </div>
-
-      <div class="sub-title">Пример полного обозначения</div>
-      <div class="formula-box">
-        <div class="formula-main">20–125 RHBM 10–4–1,5–1,5</div>
-        <div class="formula-vars">
-          <span class="formula-var">20–125</span><span>НКТ 60,3 мм (2 3/8"), диаметр насоса 31,8 мм</span>
-          <span class="formula-var">RH</span><span>Вставной, толстостенный цилиндр</span>
-          <span class="formula-var">BM</span><span>Нижнее механическое крепление</span>
-          <span class="formula-var">10</span><span>Цилиндр 10 футов (3,05 м)</span>
-          <span class="formula-var">4</span><span>Плунжер 4 фута (1,295 м)</span>
-          <span class="formula-var">1,5–1,5</span><span>Верхний и нижний удлинители по 1,5 фута (493 мм)</span>
-        </div>
-      </div>
-
-      <div class="info-block green">
-        <strong>Дополнительные опции по заказу:</strong> сдвоенные клапаны · длинноходовые составные цилиндры до 24' · боковые всасывающие клапаны БВК-32/44 · газовые якори 60/73/89 мм · фильтры ФС-60/92 и ФСП-73/89 · сливные клапаны СКОК · клапаны-отсекатели КОН
-      </div>
-    </div>
-
-    <!-- ===== OPERATION ===== -->
+    <!-- ЭКСПЛУАТАЦИЯ -->
     <div id="sec-operation" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Раздел 3</div>
         <div class="section-title">Руководство по эксплуатации</div>
       </div>
-
       <div class="sub-title">Входной контроль</div>
       <ul class="check-list">
         <li>Проверить целостность тары и извлечь упаковочный лист</li>
@@ -1797,7 +1297,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         <li><strong>ЗАПРЕЩАЕТСЯ</strong> разборка насоса при входном контроле — резьбы уплотнены и затянуты с определённым моментом</li>
         <li>Осмотр: отсутствие механических повреждений, качество покрытий и маркировки</li>
       </ul>
-
       <div class="sub-title">Хранение</div>
       <ul class="check-list">
         <li>Горизонтально на стеллажах в закрытом помещении или под навесом</li>
@@ -1805,7 +1304,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         <li>При хранении &gt;12 месяцев — переконсервация</li>
         <li>Запрещена перевозка навалом</li>
       </ul>
-
       <div class="sub-title">Спуск трубного насоса (без автосцепа)</div>
       <ul class="check-list">
         <li>Снять защитные заглушки, извлечь плунжер из цилиндра</li>
@@ -1813,7 +1311,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         <li>Спустить на штангах плунжер до касания всасывающего клапана</li>
         <li>Приподнять плунжер, обеспечив необходимый зазор (для ТНМ-Т 11-10-2-2 — 200±50 мм)</li>
       </ul>
-
       <div class="sub-title">Спуск вставного насоса (без автосцепа)</div>
       <ul class="check-list">
         <li>Снять защитные заглушки</li>
@@ -1821,15 +1318,13 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
         <li>Подсоединить фильтр к держателю седла всасывающего клапана</li>
         <li>Спустить насос на штангах и посадить в якорный башмак плавно — без удара</li>
       </ul>
-
       <div class="sub-title">Ограничения для наклонно-направленных скважин</div>
-      <div class="info-block">
+      <div class="info-block grey">
         <strong>Запрещается</strong> установка насоса на участке:<br>
         · Степень набора кривизны &gt; <strong>1° на 10 м</strong><br>
         · Угол отклонения ствола от вертикали &gt; <strong>40°</strong><br>
         · Скорость спуска в опасных интервалах &gt; <strong>0,1 м/с</strong>
       </div>
-
       <div class="sub-title">Признаки неисправности</div>
       <ul class="check-list">
         <li>Снижение дебита более чем на 1/3 — основание для подъёма насоса</li>
@@ -1839,14 +1334,14 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
       </ul>
     </div>
 
-    <!-- ===== CALC ===== -->
+    <!-- РАСЧЁТЫ -->
     <div id="sec-calc" class="section">
-      <div class="section-header">
+      <div class="section-head">
+        <div class="section-title-bar"></div>
         <div class="section-tag">Приложение В</div>
         <div class="section-title">Расчёты</div>
-        <div class="section-desc">Расчёт длин цилиндра и удлинителей по ходу плунжера</div>
+        <div class="section-desc">Расчёт длин цилиндра и удлинителей по ходу плунжера.</div>
       </div>
-
       <div class="sub-title">Формула расчёта длины цилиндра</div>
       <div class="formula-box">
         <div class="formula-main">В = Н + П − У + К</div>
@@ -1858,7 +1353,6 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           <span class="formula-var">К</span><span>— коэффициент типа насоса</span>
         </div>
       </div>
-
       <div class="sub-title">Коэффициенты К по типам насосов</div>
       <div class="table-wrap">
         <table>
@@ -1881,61 +1375,60 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
           </tbody>
         </table>
       </div>
-
       <div class="sub-title">Интерактивный калькулятор длины цилиндра</div>
-
-      <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px;">
-          <div>
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">ТИП НАСОСА</label>
-            <select id="calc_type" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:white;font-family:'Geologica',sans-serif;font-size:13px;" onchange="doCalc()">
-              <option value="1.214">20-125 RHAM</option>
-              <option value="1.178">20-125 RHBM</option>
-              <option value="1.211">20-106 RHAM</option>
-              <option value="1.178">20-106 RHBM</option>
-              <option value="1.266">25-150 RHAM</option>
-              <option value="1.289">25-150 RHBM</option>
-              <option value="1.352">25-175 RHAM</option>
-              <option value="1.375">25-175 RHBM</option>
-              <option value="1.614">20-125 THM</option>
-              <option value="1.877">20-175 THM</option>
-              <option value="2.080">25-225 THM</option>
-              <option value="2.293">30-275 THM</option>
-            </select>
+      <div class="calc-panel">
+        <div class="calc-panel-head">Калькулятор длины цилиндра</div>
+        <div class="calc-panel-body">
+          <div class="calc-grid">
+            <div>
+              <label class="calc-label">Тип насоса</label>
+              <select id="calc_type" class="calc-select" onchange="doCalc()">
+                <option value="1.214">20-125 RHAM</option>
+                <option value="1.178">20-125 RHBM</option>
+                <option value="1.211">20-106 RHAM</option>
+                <option value="1.178">20-106 RHBM</option>
+                <option value="1.266">25-150 RHAM</option>
+                <option value="1.289">25-150 RHBM</option>
+                <option value="1.352">25-175 RHAM</option>
+                <option value="1.375">25-175 RHBM</option>
+                <option value="1.614">20-125 THM</option>
+                <option value="1.877">20-175 THM</option>
+                <option value="2.080">25-225 THM</option>
+                <option value="2.293">30-275 THM</option>
+              </select>
+            </div>
+            <div>
+              <label class="calc-label">Ход плунжера, мм</label>
+              <input type="number" id="calc_stroke" value="3000" min="1000" max="6000" step="100" class="calc-input" oninput="doCalc()">
+            </div>
+            <div>
+              <label class="calc-label">Плунжер, футы</label>
+              <select id="calc_plunger" class="calc-select" onchange="doCalc()">
+                <option value="4">4 фута (1295 мм)</option>
+                <option value="5">5 футов (1600 мм)</option>
+                <option value="6">6 футов</option>
+              </select>
+            </div>
+            <div>
+              <label class="calc-label">Удлинители, футы</label>
+              <select id="calc_ext" class="calc-select" onchange="doCalc()">
+                <option value="2">2' (2×1')</option>
+                <option value="3">3' (2×1,5')</option>
+                <option value="4" selected>4' (2×2')</option>
+                <option value="5">5' (2'+3')</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">ХОД ПЛУНЖЕРА, мм</label>
-            <input type="number" id="calc_stroke" value="3000" min="1000" max="6000" step="100" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-family:'Geologica',sans-serif;font-size:13px;" oninput="doCalc()">
+          <div class="calc-result">
+            <div class="calc-result-label">Результат расчёта</div>
+            <div id="calc_out"></div>
           </div>
-          <div>
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">ПЛУНЖЕР, футы</label>
-            <select id="calc_plunger" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:white;font-family:'Geologica',sans-serif;font-size:13px;" onchange="doCalc()">
-              <option value="4">4 фута (1295 мм)</option>
-              <option value="5">5 футов (1600 мм)</option>
-              <option value="6">6 футов</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">УДЛИНИТЕЛИ, футы</label>
-            <select id="calc_ext" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:white;font-family:'Geologica',sans-serif;font-size:13px;" onchange="doCalc()">
-              <option value="2">2' (2×1')</option>
-              <option value="3">3' (2×1,5')</option>
-              <option value="4" selected>4' (2×2')</option>
-              <option value="5">5' (2'+3')</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="calc_result" style="background:var(--ink);color:var(--paper);border-radius:8px;padding:20px;font-family:'JetBrains Mono',monospace;">
-          <div style="font-size:11px;color:#888;letter-spacing:2px;margin-bottom:12px;">РЕЗУЛЬТАТ РАСЧЁТА</div>
-          <div id="calc_out" style="font-size:16px;line-height:2;"></div>
         </div>
       </div>
-
-      <div class="info-block gold">
+      <div class="info-block green">
         <strong>Пример из документа:</strong> Насос 20-125 RHAM, плунжер 4', ход 3500 мм (11,483').<br>
         В+У = 11,483 + 4 + 1,214 = 16,697'. Выбираем цилиндр 14', удлинители 4' (2×2').<br>
-        Итого: В+У = 18'. Максимальный ход плунжера: 3500 + (18 - 16,697) × 304,8 = <strong>3897 мм</strong>
+        Итого: В+У = 18'. Максимальный ход плунжера: 3500 + (18 − 16,697) × 304,8 = <strong>3897 мм</strong>
       </div>
     </div>
 
@@ -1945,36 +1438,25 @@ tr.highlight td { background: rgba(196,66,10,0.08); font-weight: 600; }
 <button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <script>
-// Navigation
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
   const sec = document.getElementById('sec-' + id);
   if (sec) sec.classList.add('visible');
 
   document.querySelectorAll('.sidebar-link').forEach(l => {
-    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'")) {
+    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'"))
       l.classList.add('active');
-    }
-  });
-
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'")) {
-      b.classList.add('active');
-    }
   });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Scroll to top button
 window.addEventListener('scroll', () => {
   document.getElementById('backTop').classList.toggle('visible', window.scrollY > 300);
 });
 
-// Calculator
 function doCalc() {
   const K = parseFloat(document.getElementById('calc_type').value);
   const strokeMm = parseFloat(document.getElementById('calc_stroke').value) || 0;
@@ -1982,28 +1464,27 @@ function doCalc() {
   const U = parseFloat(document.getElementById('calc_ext').value);
 
   const strokeFt = strokeMm / 304.8;
-  const required = strokeFt + P + K; // B+U
-  const BplusU = required;
+  const BplusU = strokeFt + P + K;
 
-  // Find nearest standard cylinder
   const stdCyl = [6,7,8,9,10,11,12,14,16,18,20,22,24];
   let chosenCyl = stdCyl.find(c => c + U >= BplusU) || stdCyl[stdCyl.length - 1];
   const actualBplusU = chosenCyl + U;
   const actualStrokeMm = strokeMm + (actualBplusU - BplusU) * 304.8;
 
+  const r = (v, d=3) => v.toFixed(d);
+
   document.getElementById('calc_out').innerHTML =
-    `<span style="color:#f0a500">Н (ход)</span>  = ${strokeMm} мм = ${strokeFt.toFixed(3)} фута\n` +
-    `<span style="color:#f0a500">К (коэф.)</span> = ${K}\n` +
-    `<span style="color:#f0a500">Треб. В+У</span> = ${BplusU.toFixed(3)} фута\n` +
-    `─────────────────────────────\n` +
-    `<span style="color:#3fb950">Цилиндр</span>   = ${chosenCyl} футов\n` +
-    `<span style="color:#3fb950">Удлинит.</span>  = ${U} фута\n` +
-    `<span style="color:#3fb950">Итого В+У</span> = ${actualBplusU} фута\n` +
-    `<span style="color:#58a6ff">Макс. ход</span> = ${Math.round(actualStrokeMm)} мм\n` +
-    `<span style="color:#58a6ff">Обозначение</span>: ...${chosenCyl}-${P}-${U/2}-${U/2}`;
+    `<span style="color:rgba(255,255,255,.55)">Н (ход)   </span> = ${strokeMm} мм = ${r(strokeFt)} фута\n` +
+    `<span style="color:rgba(255,255,255,.55)">К (коэф.) </span> = ${K}\n` +
+    `<span style="color:rgba(255,255,255,.55)">Треб. В+У </span> = ${r(BplusU)} фута\n` +
+    `<span style="color:rgba(255,255,255,.25)">─────────────────────────────</span>\n` +
+    `<span style="color:#EB564F">Цилиндр   </span> = ${chosenCyl} футов\n` +
+    `<span style="color:#EB564F">Удлинит.  </span> = ${U} фута\n` +
+    `<span style="color:#EB564F">Итого В+У </span> = ${actualBplusU} фута\n` +
+    `<span style="color:#fff;font-weight:700">Макс. ход </span> = ${Math.round(actualStrokeMm)} мм\n` +
+    `<span style="color:#fff;font-weight:700">Обозначение</span>: ...${chosenCyl}-${P}-${U/2}-${U/2}`;
 }
 
 doCalc();
 </script>
-</body>
-</html>
+{% endblock %}
