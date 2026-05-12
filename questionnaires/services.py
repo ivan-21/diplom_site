@@ -361,8 +361,6 @@ def get_material_recommendation(answers_dict):
             "val_all":       val_options,
         })
     
-    # ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ: собирает НАИХУДШИЕ варианты из всех сред
-    # Потому что если одна среда требует X, а другая A — нужно выбрать X (самый строгий)
     def collect_worst_across_environments(rows, component_key):
         """
         Собирает наихудшие (самые низкие приоритеты) материалы из всех сред.
@@ -692,20 +690,15 @@ def get_fit_recommendation(answers_dict):
 
     }
 
-def get_flow_recommendation(answers_dict):
+def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None):
     """
     Подбор оптимальных параметров насоса по требуемой подаче.
-    Вход: только V_otkach_zhidkosti (м³/сут).
-    
-    Алгоритм (справочник 2.2):
-    1. Перебираем все комбинации (ход × N × диаметр)
-    2. Для каждой подходящей комбинации считаем "стоимость" —
-       штрафуем за большой диаметр и высокое N сильнее, чем за длинный ход
-    3. Возвращаем оптимальную комбинацию + все подходящие размеры насосов
+ 
+    custom_spm  — число качаний, заданное менеджером вручную (int/float)
+    custom_eta  — коэффициент подачи (0..1), заданный менеджером вручную
     """
     import math
-
-    # Таблица 10: условный размер → диаметр плунжера
+ 
     PUMP_SIZES = [
         {"size": "106", "d_inch": 1.0625, "d_mm": 27.0,  "nkt": ["60.3"]},
         {"size": "125", "d_inch": 1.25,   "d_mm": 31.8,  "nkt": ["60.3"]},
@@ -714,45 +707,49 @@ def get_flow_recommendation(answers_dict):
         {"size": "225", "d_inch": 2.25,   "d_mm": 57.2,  "nkt": ["73.0", "88.9"]},
         {"size": "275", "d_inch": 2.75,   "d_mm": 69.9,  "nkt": ["88.9"]},
     ]
-
-    # Допустимые ходы плунжера (мм) — стандартный ряд
+ 
     STD_STROKES = [1800, 2500, 3000, 3500]
-    # Допустимые числа качаний (ход/мин)
     STD_SPM     = [10, 12, 14]
-    # Ходы для таблицы 10 (отображение)
     TABLE_STROKES = [1800, 2500, 3000, 3500]
-
-    # Размеры насосов по типам для таблицы 9
+ 
     NKT_BY_SIZE = {
         "106": "60.3", "125": "60.3",
         "150": "73.0", "175": "73.0",
         "225": "88.9", "275": "88.9",
     }
-    RH_SIZES = ["106", "125", "150", "175", "225"]  # вставные
-    TH_SIZES = ["125", "175", "225", "275"]          # трубные
-
+    RH_SIZES = ["106", "125", "150", "175", "225"]
+    TH_SIZES = ["125", "175", "225", "275"]
+ 
     volume_raw = answers_dict.get("V_otkach_zhidkosti", "")
     try:
         V = float(str(volume_raw).replace(",", ".")) if volume_raw else None
     except:
         V = None
-
+ 
     if V is None or V <= 0:
         return {"has_data": False}
-
+ 
+    # Коэффициент подачи (η): по умолчанию 1.0 (идеальная подача без потерь)
+    eta = float(custom_eta) if custom_eta is not None else 1.0
+    eta = max(0.01, min(1.0, eta))  # зажимаем в диапазон (0,1]
+ 
     def calc_flow(d_inch, stroke_mm, spm):
-        return 72.9 * 0.0001 * (d_inch ** 2) * (stroke_mm / 10.0) * spm
-
-    # ── Перебор: ход → N → диаметр (приоритет как в справочнике) ──────
-    # Штрафная функция: предпочитаем большой ход, средний N, малый диаметр
-    # score = индекс_хода*0 + индекс_N*10 + индекс_диаметра*100
-    # (меньше = лучше)
+        """Идеальная подача × коэффициент подачи"""
+        ideal = 72.9 * 0.0001 * (d_inch ** 2) * (stroke_mm / 10.0) * spm
+        return round(ideal * eta, 1)
+ 
+    # Если менеджер задал N вручную — используем только его
+    if custom_spm is not None:
+        spm_list = [int(custom_spm)]
+    else:
+        spm_list = STD_SPM
+ 
     best = None
     best_score = 999999
-    candidates = []  # все подходящие комбинации
-
+    candidates = []
+ 
     for i_s, stroke in enumerate(STD_STROKES):
-        for i_n, spm in enumerate(STD_SPM):
+        for i_n, spm in enumerate(spm_list):
             for i_d, ps in enumerate(PUMP_SIZES):
                 flow = calc_flow(ps["d_inch"], stroke, spm)
                 if flow >= V:
@@ -761,7 +758,7 @@ def get_flow_recommendation(answers_dict):
                         "stroke_mm":  stroke,
                         "spm":        spm,
                         "pump":       ps,
-                        "flow":       round(flow, 1),
+                        "flow":       flow,
                         "score":      score,
                         "excess_pct": round((flow / V - 1) * 100, 1),
                     }
@@ -769,31 +766,32 @@ def get_flow_recommendation(answers_dict):
                     if score < best_score:
                         best_score = score
                         best = combo
-
+ 
     if best is None:
+        max_flow = calc_flow(PUMP_SIZES[-1]["d_inch"], max(STD_STROKES), max(spm_list))
         return {
             "has_data":   True,
             "V_required": V,
             "overflow":   True,
-            "max_flow":   round(calc_flow(PUMP_SIZES[-1]["d_inch"], max(STD_STROKES), max(STD_SPM)), 1),
+            "max_flow":   max_flow,
+            "eta":        eta,
+            "custom_spm": custom_spm,
         }
-
-    # ── Пояснение почему именно эта комбинация ────────────────────────
+ 
+    # ── Пояснение ──
     steps = []
-
-    # Шаг 1: хватает ли хода при минимальном диаметре и N=10?
     base_pump = PUMP_SIZES[0]
-    base_spm  = 10
+    base_spm  = spm_list[0]
     step1_stroke = None
     for stroke in STD_STROKES:
         if calc_flow(base_pump["d_inch"], stroke, base_spm) >= V:
             step1_stroke = stroke
             break
-
+ 
     if step1_stroke:
         steps.append({
             "num": 1, "label": "Ход плунжера",
-            "result": f"{step1_stroke} мм достаточно при N=10 и размере 106",
+            "result": f"{step1_stroke} мм достаточно при N={base_spm} и размере 106",
             "achieved": True, "is_decisive": True,
         })
         steps.append({"num": 2, "label": "Число качаний", "result": "Не требуется", "achieved": False, "is_decisive": False})
@@ -804,14 +802,13 @@ def get_flow_recommendation(answers_dict):
             "result": f"Недостаточно даже при ходе {max(STD_STROKES)} мм и размере 106",
             "achieved": False, "is_decisive": False,
         })
-        # Шаг 2: хватает ли N при максимальном ходе и минимальном диаметре?
         max_stroke = max(STD_STROKES)
         step2_spm = None
-        for spm in STD_SPM:
+        for spm in spm_list:
             if calc_flow(base_pump["d_inch"], max_stroke, spm) >= V:
                 step2_spm = spm
                 break
-
+ 
         if step2_spm:
             steps.append({
                 "num": 2, "label": "Число качаний",
@@ -822,7 +819,7 @@ def get_flow_recommendation(answers_dict):
         else:
             steps.append({
                 "num": 2, "label": "Число качаний",
-                "result": f"Недостаточно даже при N={max(STD_SPM)} и ходе {max_stroke} мм",
+                "result": f"Недостаточно даже при N={max(spm_list)} и ходе {max_stroke} мм",
                 "achieved": False, "is_decisive": False,
             })
             steps.append({
@@ -830,12 +827,10 @@ def get_flow_recommendation(answers_dict):
                 "result": f"Требуется размер {best['pump']['size']} ({best['pump']['d_mm']} мм)",
                 "achieved": True, "is_decisive": True,
             })
-
-    # ── Подходящие размеры насосов (все что обеспечивают подачу V) ────
-    # при оптимальных ходе и N из best
+ 
     opt_stroke = best["stroke_mm"]
     opt_spm    = best["spm"]
-
+ 
     suitable_sizes = []
     for ps in PUMP_SIZES:
         flow = calc_flow(ps["d_inch"], opt_stroke, opt_spm)
@@ -844,18 +839,17 @@ def get_flow_recommendation(answers_dict):
                 "size":       ps["size"],
                 "d_mm":       ps["d_mm"],
                 "d_inch":     ps["d_inch"],
-                "flow":       round(flow, 1),
+                "flow":       flow,
                 "excess_pct": round((flow / V - 1) * 100, 1),
                 "nkt":        NKT_BY_SIZE.get(ps["size"], ""),
                 "rh_ok":      ps["size"] in RH_SIZES,
                 "th_ok":      ps["size"] in TH_SIZES,
                 "is_optimal": ps["size"] == best["pump"]["size"],
             })
-
-    # ── Таблица 10 при оптимальном N ─────────────────────────────────
+ 
     table_rows = []
     for ps in PUMP_SIZES:
-        flows = [round(calc_flow(ps["d_inch"], s, opt_spm), 1) for s in TABLE_STROKES]
+        flows = [calc_flow(ps["d_inch"], s, opt_spm) for s in TABLE_STROKES]
         table_rows.append({
             "size":           ps["size"],
             "d_mm":           ps["d_mm"],
@@ -863,26 +857,29 @@ def get_flow_recommendation(answers_dict):
             "is_suitable":    ps["size"] in [s["size"] for s in suitable_sizes],
             "is_optimal":     ps["size"] == best["pump"]["size"],
         })
-
+ 
+    # Формула с коэффициентом подачи
+    eta_str = f" × {eta}" if eta != 1.0 else ""
+    formula = (
+        f"V = 72,9 × 0,0001 × {best['pump']['d_inch']}² × "
+        f"{round(opt_stroke/10.0, 1)} × {opt_spm}{eta_str} = {best['flow']} м³/сут"
+    )
+ 
     return {
         "has_data":       True,
         "overflow":       False,
         "V_required":     V,
-        # оптимальная комбинация
         "best":           best,
         "opt_stroke":     opt_stroke,
         "opt_spm":        opt_spm,
-        # пояснение
         "steps":          steps,
-        # подходящие размеры
         "suitable_sizes": suitable_sizes,
-        # таблица
         "table_rows":     table_rows,
         "table_strokes":  TABLE_STROKES,
         "opt_spm_label":  opt_spm,
-        # формула
-        "formula": (
-            f"V = 72,9 × 0,0001 × {best['pump']['d_inch']}² × "
-            f"{round(opt_stroke/10.0, 1)} × {opt_spm} = {best['flow']} м³/сут"
-        ),
+        "formula":        formula,
+        # передаём обратно для отображения в шаблоне
+        "eta":            eta,
+        "custom_spm":     custom_spm,
     }
+ 
