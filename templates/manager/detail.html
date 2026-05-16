@@ -191,12 +191,44 @@ const API = {
 
 function parseTypeCode(typeFull) {
   if (!typeFull) return {r:"?", h:"?", lock:"?", mount:"?"};
-  const parts = typeFull.trim().split(" ");
-  const code = parts[1] || "";
-  if (code.startsWith("TH")) {
-    return {r:"T", h:"H", lock:"M", mount: code[3] || "M"};
+
+  const parts    = typeFull.trim().split(" ");
+  const code     = parts[1] || "";
+
+  const dashIdx  = code.indexOf("-");
+  const baseCode = dashIdx > 0 ? code.slice(0, dashIdx) : code.split("(")[0].trim();
+  const suffix   = dashIdx > 0 ? code.slice(dashIdx + 1) : "";
+
+  // Крепление: манжетное если базовый код кончается на C (RHAC/RHBC)
+  // или суффикс начинается на C/С (THM-C, THM-СЛ и т.д.)
+  let mount = "M";
+  if (baseCode.endsWith("C")) {
+    mount = "C";
+  } else if (suffix.startsWith("C") || suffix.startsWith("С")) {
+    mount = "C";
   }
-  return {r: code[0]||"?", h: code[1]||"?", lock: code[2]||"?", mount: code[3]||"?"};
+
+  // Трубный насос
+  if (baseCode === "THM" || baseCode === "THC") {
+    return {r:"T", h:"H", lock:"", mount};
+  }
+
+  // RHM-T — особый тип (верхний узел перенесён вниз)
+  // Обозначается как RHM без буквы замка
+  if (baseCode === "RHM") {
+    return {r:"R", h:"H", lock:"T", mount:"M"};
+  }
+
+  // Стандартные вставные: RHAM, RHBM, RHAC, RHBC, RHTM
+  // baseCode длиной 4: R-H-{A|B|T}-{M|C}
+  const r    = baseCode[0] || "?";
+  const h    = baseCode[1] || "?";
+  const lock = baseCode[2] || "?";
+  // mount уже определён выше, но для RH берём из кода если не было переопределения
+  const mountFromCode = baseCode[3] || "M";
+  const finalMount = (baseCode.endsWith("C")) ? "C" : mountFromCode;
+
+  return {r, h, lock, mount: finalMount};
 }
 
 function nktPrefix(size) {
@@ -241,15 +273,20 @@ function setMat(id, label, value) {
 
 function renderPanel() {
   const tc = parseTypeCode(API.typeFull);
-  const nktNum = nktPrefix(API.size);
-  const innerSize = API.size ? API.size.split("-")[1] : "";
-  const isTH = tc.r !== "T";
+  const parts    = API.typeFull ? API.typeFull.trim().split(" ") : [];
+  const sizeStr  = parts[0] || "";   // "25/20-175"
+  const codeStr  = parts[1] || "";   // "RHM-T"
+  
+  // НКТ — первая часть size до дефиса
+  const nktNum     = sizeStr.split("-")[0] || "";
+  // Внутренний диаметр — последняя часть size
+  const innerSize  = sizeStr.split("-").slice(-1)[0] || "";
 
   setPill("seg-nkt",   nktNum,      "pill-nkt");
   setPill("seg-size",  innerSize,   "pill-size");
   setPill("seg-r",     tc.r,        "pill-r");
   setPill("seg-h",     tc.h,        "pill-h");
-  setPill("seg-lock",  isTH ? tc.lock : "", "pill-lock");
+  setPill("seg-lock",  tc.lock,     "pill-lock");
   setPill("seg-mount", tc.mount,    "pill-mount");
   setPill("seg-cyl",   API.cylLen,  "pill-cyl");
   setPill("seg-plun",  API.plunLen, "pill-plun");
@@ -266,24 +303,22 @@ function renderPanel() {
     .join("-");
 
   const fullLine = document.getElementById("api-full-line");
-  if (API.size || API.typeFull) {
-    const lockSpan = isTH ? `<span class="seg-lock">${tc.lock || "?"}</span>` : "";
+
+  if (API.typeFull) {
+    // Показываем обозначение один в один как выбрано — без переформатирования
     fullLine.innerHTML =
       `<span class="seg-nkt">${nktNum || "?"}</span>` +
       `<span class="seg-sep">-</span>` +
       `<span class="seg-size">${innerSize || "???"}</span>` +
-      `<span class="seg-sep">-</span>` +
-      `<span class="seg-r">${tc.r || "?"}</span>` +
-      `<span class="seg-h">${tc.h || "?"}</span>` +
-      lockSpan +
-      `<span class="seg-mount">${tc.mount || "?"}</span>` +
+      `<span class="seg-sep"> </span>` +
+      `<span class="seg-r">${codeStr || "?"}</span>` +  // весь код как есть: RHM-T, THM-C и т.д.
       `<span class="seg-sep">-</span>` +
       `<span class="seg-cyl">${cylPart}</span>`;
   } else {
     fullLine.textContent = "—";
   }
 
-  const done = API.size && API.cylLen && API.fit;
+  const done = API.typeFull && API.cylLen && API.fit;
   document.getElementById("api-complete-badge").style.display = done ? "inline-flex" : "none";
 }
 
@@ -303,33 +338,47 @@ function copyApiDesignation() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
+  if (!SELECTED_SIZE || !SELECTED_FULL) return;
+
+  // Определяем тип из полного обозначения
+  const selectedParts = SELECTED_FULL.split(' ');
+  const selectedCode  = selectedParts[1] || '';
+  const dashIdx       = selectedCode.indexOf('-');
+  const baseCode      = dashIdx > 0
+    ? selectedCode.slice(0, dashIdx)
+    : selectedCode.split('(')[0].trim();
+  const selectedType  = (baseCode === 'THM' || baseCode === 'THC') ? 'TH' : 'RH';
+
+  // Собираем модификации для выбранного размера и типа
+  let mods = [];
+  for (const groupKey in ALL_MODS) {
+    const isThGroup = groupKey.slice(0, 2) === 'TH';
+    const matchType = (selectedType === 'TH') ? isThGroup : !isThGroup;
+    if (matchType && ALL_MODS[groupKey].sizes[SELECTED_SIZE]) {
+      mods = mods.concat(ALL_MODS[groupKey].sizes[SELECTED_SIZE]);
+    }
+  }
+
+  if (!mods.length) return;
+
+  // Подсвечиваем кнопку размера
+  document.querySelectorAll('.size-select-btn').forEach(btn => {
+    const sizeMatch = btn.dataset.size === SELECTED_SIZE;
+    const typeMatch = btn.dataset.groupType === selectedType;
+    if (sizeMatch && typeMatch) {
+      btn.style.border     = '1px solid #3b82f6';
+      btn.style.background = '#eff6ff';
+      btn.style.color      = '#1d4ed8';
+    }
+  });
+
+  // Показываем mod-step до renderMods — иначе display:none мешает
+  const step = document.getElementById('mod-step');
+  if (step) step.style.display = 'block';
+
+  renderMods(mods);
   renderPanel();
-
-  document.querySelectorAll(".cyl-variant-card").forEach(card => {
-    card.style.cursor = "pointer";
-    card.addEventListener("click", () => {
-      document.querySelectorAll(".cyl-variant-card").forEach(c => { c.style.outline = ""; });
-      card.style.outline = "2px solid #3b82f6";
-      card.style.outlineOffset = "2px";
-      const cyl = card.dataset.cyl.split("-");
-      API.cylLen  = cyl[0] || "";
-      API.plunLen = cyl[1] || "";
-      API.ext1    = cyl[2] || "";
-      API.ext2    = cyl[3] || "";
-      renderPanel();
-    });
-  });
-
-  document.querySelectorAll(".fit-variant-card").forEach(card => {
-    card.addEventListener("click", () => {
-      document.querySelectorAll(".fit-variant-card").forEach(c => c.style.outline = "");
-      card.style.outline = "2px solid #3b82f6";
-      card.style.outlineOffset = "2px";
-      API.fit = card.dataset.fit;
-      renderPanel();
-    });
-  });
 });
       </script>
 
@@ -537,16 +586,6 @@ document.addEventListener("DOMContentLoaded", () => {
                       {{ s.flow }} м³/сут
                       <span style="font-size:11px;color:var(--muted);font-weight:400;">(+{{ s.excess_pct }}% к требуемой)</span>
                     </div>
-                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                      {% if s.rh_ok %}
-                        <span style="font-size:10px;padding:2px 7px;border-radius:6px;
-                             border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-weight:700;">RH</span>
-                      {% endif %}
-                      {% if s.th_ok %}
-                        <span style="font-size:10px;padding:2px 7px;border-radius:6px;
-                             border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-weight:700;">TH</span>
-                      {% endif %}
-                    </div>
                   </div>
                 {% endfor %}
               </div>
@@ -571,7 +610,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div style="margin-bottom:14px;padding:10px 14px;border-radius:10px;
                 border:1px solid #bbf7d0;background:#f0fdf4;
                 display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span style="font-size:13px;font-weight:800;color:#166534;">✓ Выбрано менеджером:</span>
+                <span style="font-size:13px;font-weight:800;color:#166534;">Выбрано:</span>
                 <span style="font-size:14px;font-weight:900;color:#166534;">{{ selected_pump_full }}</span>
                 {% if selected_nkt %}<span style="font-size:12px;color:#166534;opacity:.8;">· НКТ {{ selected_nkt }} мм</span>{% endif %}
                 <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="margin-left:auto;">
@@ -624,49 +663,246 @@ document.addEventListener("DOMContentLoaded", () => {
                       <li>Нет специфических условий</li>
                     {% endfor %}
                   </ul>
-
-                  {% if pump.verdict != 'not_recommended' %}
-                    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
-                      <div style="font-size:10px;font-weight:800;color:var(--muted);
-                      text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Выбрать размер:</div>
-
-                      {% if pump.code == 'RHA' or pump.code == 'RHB' or pump.code == 'RHT' %}
-                        {% for item in rh_sizes %}
-                          <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="display:inline-block;margin:2px 2px 2px 0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="pump_code" value="{{ pump.code }}" />
-                            <input type="hidden" name="pump_size" value="{{ item.size }}" />
-                            <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}" />
-                            <button type="submit" class="size-btn {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
-                              {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
-                              {{ item.size }}
-                              <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
-                            </button>
-                          </form>
-                        {% empty %}
-                          <span style="font-size:11px;color:var(--muted);">—</span>
-                        {% endfor %}
-                      {% elif pump.code == 'TH' %}
-                        {% for item in th_sizes %}
-                          <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}" style="display:inline-block;margin:2px 2px 2px 0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="pump_code" value="{{ pump.code }}" />
-                            <input type="hidden" name="pump_size" value="{{ item.size }}" />
-                            <input type="hidden" name="nkt_diameter" value="{{ item.nkt }}" />
-                            <button type="submit" class="size-btn size-btn-th {% if selected_pump == pump.code and selected_size == item.size %}size-btn-selected{% endif %}">
-                              {% if selected_pump == pump.code and selected_size == item.size %}✓ {% endif %}
-                              {{ item.size }}
-                              <span class="size-btn-nkt">НКТ {{ item.nkt }}</span>
-                            </button>
-                          </form>
-                        {% empty %}
-                          <span style="font-size:11px;color:var(--muted);">—</span>
-                        {% endfor %}
-                      {% endif %}
-                    </div>
-                  {% endif %}
                 </div>
               {% endfor %}
+              </div>
+                {# ── Общий блок выбора насоса ── #}
+                <div style="margin-top:24px;border:1px solid var(--line);border-radius:12px;overflow:hidden;">
+
+                  {# Заголовок #}
+                  <div style="padding:14px 20px;background:var(--rimera-grey);border-left:4px solid var(--rimera-red);
+                    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div style="font-size:12px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.8px;">
+                      Выбор насоса
+                    </div>
+                    {% if selected_pump_full %}
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span style="font-size:14px;font-weight:900;color:#fff;">{{ selected_pump_full }}</span>
+                        {% if selected_nkt %}
+                          <span style="font-size:12px;color:rgba(255,255,255,.6);">· НКТ {{ selected_nkt }} мм</span>
+                        {% endif %}
+                        <form method="post" action="{% url 'manager_select_pump' submission_id=sub.id %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="pump_type_full" value="" />
+                          <button type="submit" style="padding:4px 10px;border-radius:6px;
+                            border:1px solid rgba(255,255,255,.3);background:transparent;
+                            font-size:11px;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;">
+                            Сбросить
+                          </button>
+                        </form>
+                      </div>
+                    {% else %}
+                      <span style="font-size:12px;color:rgba(255,255,255,.5);">Насос не выбран</span>
+                    {% endif %}
+                  </div>
+
+                  <div style="padding:20px;background:var(--card);">
+
+                    {# Шаг 1: размер #}
+                    <div style="margin-bottom:20px;">
+                      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+                        1. Тип и размер насоса
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:14px;">
+
+                        {# Строка: Вставные RH #}
+                        <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                          <span style="font-size:11px;font-weight:700;color:var(--muted);
+                            min-width:120px;flex-shrink:0;padding-top:8px;">
+                            Вставные (RH)
+                          </span>
+                          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            {% for group_key, group in all_modifications.items %}
+                              {% if group_key == 'RH_60' or group_key == 'RH_73' or group_key == 'RH_89' %}
+                                {% for size_key, mods in group.sizes.items %}
+                                  <button type="button"
+                                    class="size-select-btn"
+                                    data-size="{{ size_key }}"
+                                    data-nkt="{{ group.nkt }}"
+                                    data-group-type="RH"
+                                    onclick="selectSize(this)"
+                                    style="padding:7px 14px;border-radius:8px;cursor:pointer;
+                                      font-size:12px;font-weight:800;transition:all .12s;
+                                      border:1px solid {% if selected_size == size_key and selected_nkt == group.nkt %}#3b82f6{% else %}var(--line){% endif %};
+                                      background:{% if selected_size == size_key and selected_nkt == group.nkt %}#eff6ff{% else %}var(--bg){% endif %};
+                                      color:{% if selected_size == size_key and selected_nkt == group.nkt %}#1d4ed8{% else %}var(--text){% endif %};">
+                                    {% if selected_size == size_key and selected_nkt == group.nkt %}✓ {% endif %}
+                                    {{ size_key }}
+                                    <span style="font-size:10px;font-weight:400;color:var(--muted);display:block;">
+                                      НКТ {{ group.nkt }}
+                                    </span>
+                                  </button>
+                                {% endfor %}
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        </div>
+
+                        {# Строка: Трубные TH #}
+                        <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                          <span style="font-size:11px;font-weight:700;color:var(--muted);
+                            min-width:120px;flex-shrink:0;padding-top:8px;">
+                            Трубные (TH)
+                          </span>
+                          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                            {% for group_key, group in all_modifications.items %}
+                              {% if group_key == 'TH_48' or group_key == 'TH_60' or group_key == 'TH_73' or group_key == 'TH_89' %}
+                                {% for size_key, mods in group.sizes.items %}
+                                  <button type="button"
+                                    class="size-select-btn"
+                                    data-size="{{ size_key }}"
+                                    data-nkt="{{ group.nkt }}"
+                                    data-group-type="TH"
+                                    onclick="selectSize(this)"
+                                    style="padding:7px 14px;border-radius:8px;cursor:pointer;
+                                      font-size:12px;font-weight:800;transition:all .12s;
+                                      border:1px solid {% if selected_size == size_key and selected_nkt == group.nkt %}#3b82f6{% else %}var(--line){% endif %};
+                                      background:{% if selected_size == size_key and selected_nkt == group.nkt %}#eff6ff{% else %}var(--bg){% endif %};
+                                      color:{% if selected_size == size_key and selected_nkt == group.nkt %}#1d4ed8{% else %}var(--text){% endif %};">
+                                    {% if selected_size == size_key and selected_nkt == group.nkt %}✓ {% endif %}
+                                    {{ size_key }}
+                                    <span style="font-size:10px;font-weight:400;color:var(--muted);display:block;">
+                                      НКТ {{ group.nkt }}
+                                    </span>
+                                  </button>
+                                {% endfor %}
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {# Шаг 2: модификации #}
+                    <div id="mod-step" style="display:{% if selected_size %}block{% else %}none{% endif %};">
+                      <div style="height:1px;background:var(--line);margin-bottom:20px;"></div>
+                      <div style="font-size:10px;font-weight:800;color:var(--muted);
+                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">
+                        2. Модификация
+                      </div>
+                      <div id="mod-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:6px;"></div>
+                    </div>
+
+                  </div>
+                </div>
+
+            {# Скрытая форма #}
+            <form id="pump-select-form"
+              method="post"
+              action="{% url 'manager_select_pump' submission_id=sub.id %}"
+              style="display:none;">
+              {% csrf_token %}
+              <input type="hidden" name="pump_type_full" id="pump-type-full-input" value="" />
+            </form>
+
+<script>
+const ALL_MODS      = {{ all_modifications_json|safe }};
+const SELECTED_SIZE = "{{ selected_size|default:'' }}";
+const SELECTED_NKT  = "{{ selected_nkt|default:'' }}";
+const SELECTED_FULL = "{{ selected_pump_full|escapejs }}";
+
+function selectSize(btn) {
+  document.querySelectorAll('.size-select-btn').forEach(b => {
+    b.style.border     = '1px solid var(--line)';
+    b.style.background = 'var(--bg)';
+    b.style.color      = 'var(--text)';
+  });
+  btn.style.border     = '1px solid #3b82f6';
+  btn.style.background = '#eff6ff';
+  btn.style.color      = '#1d4ed8';
+
+  const size      = btn.dataset.size;
+  const groupType = btn.dataset.groupType;
+
+  let mods = [];
+  for (const groupKey in ALL_MODS) {
+    const isThGroup = groupKey.slice(0, 2) === 'TH';
+    const matchType = (groupType === 'TH') ? isThGroup : !isThGroup;
+    if (matchType && ALL_MODS[groupKey].sizes[size]) {
+      mods = mods.concat(ALL_MODS[groupKey].sizes[size]);
+    }
+  }
+  renderMods(mods);
+}
+
+function renderMods(mods) {
+  const step = document.getElementById('mod-step');
+  const list = document.getElementById('mod-list');
+  list.innerHTML = '';
+
+  if (!mods.length) { step.style.display = 'none'; return; }
+
+  mods.forEach(mod => {
+    const isSelected = mod.full === SELECTED_FULL;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.style.cssText = `
+      display:flex; align-items:center; gap:12px;
+      padding:10px 14px; border-radius:10px; text-align:left;
+      border:${isSelected ? '2px solid #22c55e' : '1px solid var(--line)'};
+      background:${isSelected ? '#f0fdf4' : 'var(--bg)'};
+      cursor:pointer; transition:all .12s; width:100%;
+    `;
+    row.innerHTML = `
+      <div style="flex:1;">
+        <span style="font-size:13px;font-weight:800;
+          color:${isSelected ? '#166534' : 'var(--text)'};">
+          ${isSelected ? '✓ ' : ''}${mod.label}
+        </span>
+        <span style="font-size:12px;color:var(--muted);margin-left:8px;">${mod.desc}</span>
+      </div>
+      <span style="font-size:11px;font-family:monospace;color:var(--muted);flex-shrink:0;">
+        ${mod.full}
+      </span>
+    `;
+    row.onmouseenter = () => { if (!isSelected) row.style.background = 'rgba(59,130,246,.05)'; };
+    row.onmouseleave = () => { if (!isSelected) row.style.background = 'var(--bg)'; };
+    row.onclick = () => submitMod(mod.full);
+    list.appendChild(row);
+  });
+
+  step.style.display = 'block';
+}
+
+function submitMod(pumpTypeFull) {
+  document.getElementById('pump-type-full-input').value = pumpTypeFull;
+  document.getElementById('pump-select-form').submit();
+}
+
+// При загрузке — показываем модификации если уже есть выбранный размер
+document.addEventListener('DOMContentLoaded', () => {
+  if (!SELECTED_SIZE || !SELECTED_FULL) return;
+
+  const selectedParts = SELECTED_FULL.split(' ');
+  const selectedCode  = selectedParts[1] || '';
+  const baseCode      = selectedCode.split(/[-\s\(]/)[0];
+  const selectedType  = (baseCode === 'THM' || baseCode === 'THC') ? 'TH' : 'RH';
+
+  // Подсвечиваем активную кнопку размера
+  document.querySelectorAll('.size-select-btn').forEach(btn => {
+    if (btn.dataset.size === SELECTED_SIZE &&
+        btn.dataset.nkt  === SELECTED_NKT  &&
+        btn.dataset.groupType === selectedType) {
+      btn.style.border     = '1px solid #3b82f6';
+      btn.style.background = '#eff6ff';
+      btn.style.color      = '#1d4ed8';
+    }
+  });
+
+  // Рендерим модификации
+  let mods = [];
+  for (const groupKey in ALL_MODS) {
+    const isThGroup = groupKey.slice(0, 2) === 'TH';
+    const matchType = (selectedType === 'TH') ? isThGroup : !isThGroup;
+    if (matchType && ALL_MODS[groupKey].sizes[SELECTED_SIZE]) {
+      mods = mods.concat(ALL_MODS[groupKey].sizes[SELECTED_SIZE]);
+    }
+  }
+  renderMods(mods);
+});
+</script>
             </div>
 
             {% if recommendation.log %}

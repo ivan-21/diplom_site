@@ -91,7 +91,7 @@ def get_pump_recommendation(answers_dict):
         },
         "73.0": {
             "RH": ["25-150", "25-175"],
-            "TH": ["25-225"],
+            "TH": ["25-225", "25-175", "25-150"],
         },
         "88.9": {
             "RH": ["30-225"],
@@ -138,8 +138,8 @@ def get_pump_recommendation(answers_dict):
         add("RHA", +10, "CO₂, глубина до 2000 м — RHA (верхнее крепление) рекомендовано")
         log.append("CO₂, глубина до 2000 м — RHA +10")
     if depth > 2100:
-        add("RHA", -1000, "⚠ Глубже 2100 м — RHA (верхнее крепление) не рекомендуется")
-        log.append("⚠ Глубже 2100 м — RHA -1000")
+        add("RHA", -1000, "Глубже 2100 м — RHA (верхнее крепление) не рекомендуется")
+        log.append("Глубже 2100 м — RHA -1000")
 
     # ── RHB рекомендации ──
 
@@ -402,7 +402,7 @@ def get_material_recommendation(answers_dict):
         "summary":  summary,
     }
 
-def get_cylinder_recommendation(answers_dict, flow_rec=None):
+def get_cylinder_recommendation(answers_dict, flow_rec=None, dlina_plunger=None):
     """
     Расчёт длины цилиндра и удлинителей по формуле приложения В справочника:
         В + У = Н + П + К
@@ -412,6 +412,9 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
         Н — ход плунжера (футы)
         П — длина плунжера (футы) — рассчитывается здесь по глубине
         К — конструктивный коэффициент (зависит от типа насоса)
+
+    Допустимые длины цилиндров, плунжеров и удлинителей берутся из
+    Приложения Б справочника (Номенклатура изготавливаемых насосов).
     """
 
     K_TABLE = {
@@ -425,24 +428,111 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
         "25-175 RHBM": 1.375,
         "20-125 THM":  1.614,
         "20-175 THM":  1.877,
+        "25-150 THM":  1.877, # как в 20-175 THM (в таблице нет значения)
+        "25-175 THM":  1.877, # как в 20-175 THM (в таблице нет значения)
         "25-225 THM":  2.080,
         "30-275 THM":  2.293,
     }
 
-    STD_CYL_RH = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
-    STD_CYL_TH = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
-
-    # Стандартные пары удлинителей (суммарная длина → (удл1, удл2))
-    EXT_PAIRS = {
-        2.0: (1.0, 1.0),
-        3.0: (1.5, 1.5),
-        4.0: (2.0, 2.0),
-        5.0: (2.0, 3.0),
+    # ── Приложение Б: допустимые параметры по типу насоса ────────────────
+    # Формат: "тип насоса": {
+    #   "cylinders":  [список стандартных длин цилиндра в футах],
+    #   "plungers":   [список допустимых длин плунжера в футах],
+    #   "ext_pairs":  [(суммарная_длина_удл, (удл1, удл2)), ...],
+    # }
+    APPENDIX_B = { # проверить все типы насосов в таблице
+        # 20-106 RHAM / 20-125 RHAM (крепл. API)
+        "20-106 RHAM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(2, (1.0, 1.0)), (3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        "20-125 RHAM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(2, (1.0, 1.0)), (3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        # 20-106 RHBM / 20-125 RHBM
+        "20-106 RHBM": {
+            "cylinders": [7, 8, 9, 10, 12, 14],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        "20-125 RHBM": {
+            "cylinders": [7, 8, 9, 10, 12, 14],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        # 25-150 RHAM / 25-175 RHAM (крепл. API)
+        "25-150 RHAM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16, 22, 24],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(2, (1.0, 1.0)), (3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        "25-175 RHAM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16, 22, 24],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(2, (1.0, 1.0)), (3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        # 25-150 RHBM / 25-175 RHBM
+        "25-150 RHBM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16, 22],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        "25-175 RHBM": {
+            "cylinders": [7, 8, 9, 10, 12, 14, 16, 22],
+            "plungers":  [4, 5, 6],
+            "ext_pairs": [(3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        # 30-225 RHBM
+        "30-225 RHBM": {
+            "cylinders": [12, 14],
+            "plungers":  [4],
+            "ext_pairs": [(3, (1.5, 1.5)), (4, (2.0, 2.0))],
+        },
+        # 20-125 THM
+        "20-125 THM": {
+            "cylinders": [7, 8, 9, 11, 14],
+            "plungers":  [4],
+            "ext_pairs": [(4, (2.0, 2.0)), (5, (2.0, 3.0))],
+        },
+        # 20-175 THM
+        "20-175 THM": {
+            "cylinders": [7, 8, 9, 10, 11, 14],
+            "plungers":  [4],
+            "ext_pairs": [(4, (2.0, 2.0)), (5, (2.0, 3.0))],
+        },
+        # 25-175 THM
+        "25-175 THM": {
+            "cylinders": [7, 8, 9, 10, 11, 14, 22],
+            "plungers":  [4, 5],
+            "ext_pairs": [(4, (2.0, 2.0)), (5, (2.0, 3.0))],
+        },
+        # 25-225 THM
+        "25-225 THM": {
+            "cylinders": [7, 8, 9, 10, 11, 14, 22],
+            "plungers":  [4, 5],
+            "ext_pairs": [(4, (2.0, 2.0)), (5, (2.0, 3.0))],
+        },
+        # 30-275 THM
+        "30-275 THM": {
+            "cylinders": [8, 10, 11, 14, 22],
+            "plungers":  [4],
+            "ext_pairs": [(4, (2.0, 2.0)), (5, (2.0, 3.0))],
+        },
     }
+
+    # Универсальный ряд как запасной вариант (если тип не в таблице)
+    FALLBACK_CYL_RH = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+    FALLBACK_CYL_TH = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+    FALLBACK_EXT = [(2, (1.0, 1.0)), (3, (1.5, 1.5)), (4, (2.0, 2.0)), (5, (2.0, 3.0))]
 
     depth_raw     = answers_dict.get("glubina_pogruzhenia", "")
     pump_type_key = answers_dict.get("pump_type_full", "")
+    dlina_plunger = answers_dict.get("dlina_plunger", "")
 
+    # Ход плунжера: приоритет — flow_rec, иначе из ответов
     if flow_rec and flow_rec.get("has_data") and not flow_rec.get("overflow"):
         stroke_mm = flow_rec["opt_stroke"]
     else:
@@ -460,26 +550,28 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
     if depth is None and stroke_mm is None:
         return {"has_data": False}
 
-    # ── Длина плунжера П по глубине ──
-    if depth is not None:
+    # ── Длина плунжера П по глубине ──────────────────────────────────────
+    # Из справочника: выбираем минимально допустимый плунжер для данной глубины,
+    # затем проверяем что он есть в допустимых для данного типа насоса.
+    if dlina_plunger is None:
         if depth <= 1500:
-            P = 4
+            P_base = 4
             plunger_mm   = 1295
             plunger_note = "Глубина до 1500 м — 4 фута"
         elif depth <= 2000:
-            P = 5
+            P_base = 5
             plunger_mm   = 1600
             plunger_note = "Глубина до 2000 м — 5 футов"
         else:
-            P = 6
+            P_base = 6
             plunger_mm   = 1829
             plunger_note = "Глубина свыше 2000 м — 6 футов"
     else:
-        P = 4
+        P_base = 4
         plunger_mm   = 1295
         plunger_note = "Глубина не указана — принято 4 фута по умолчанию"
 
-    # ── Ход плунжера Н ──
+    # ── Ход плунжера Н ───────────────────────────────────────────────────
     if stroke_mm is not None:
         N = stroke_mm / 304.8
     elif depth is not None:
@@ -490,13 +582,32 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
 
     K        = K_TABLE.get(pump_type_key)
     is_TH    = pump_type_key.endswith("THM") if pump_type_key else False
-    std_cyl  = STD_CYL_TH if is_TH else STD_CYL_RH
 
+    # ── Параметры из Приложения Б ─────────────────────────────────────────
+    appendix = APPENDIX_B.get(pump_type_key)
+
+    if appendix:
+        std_cyl   = sorted(appendix["cylinders"])
+        ext_pairs = appendix["ext_pairs"]
+
+        # Выбираем длину плунжера: берём P_base или ближайший допустимый (>=)
+        allowed_p = sorted(appendix["plungers"])
+        P = next((p for p in allowed_p if p >= P_base), allowed_p[-1])
+        if P != P_base:
+            plunger_note += f" (скорректировано до {P}' — ближайший допустимый для {pump_type_key})"
+            plunger_mm = {4: 1295, 5: 1600, 6: 1829}.get(P, plunger_mm)
+    else:
+        # Тип насоса не выбран или не в таблице — используем универсальные ряды
+        std_cyl   = FALLBACK_CYL_TH if is_TH else FALLBACK_CYL_RH
+        ext_pairs = FALLBACK_EXT
+        P = P_base
+
+    # ── Расчёт вариантов (В + У = Н + П + К) ─────────────────────────────
     if K is not None:
         required = N + P + K  # минимальное В+У
 
         results = []
-        for U, (u1, u2) in EXT_PAIRS.items():
+        for U, (u1, u2) in ext_pairs:
             V_needed = required - U
             V = next((c for c in std_cyl if c >= V_needed), None)
             if V is None:
@@ -514,22 +625,31 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
                 "designation": f"{pump_type_key} {int(V)}-{int(P)}-{u1}-{u2}",
             })
 
+        # Уведомление если нет подходящего цилиндра
+        overflow_note = None
+        if not results:
+            overflow_note = (
+                f"Требуемый цилиндр выходит за пределы номенклатуры для {pump_type_key}. "
+                f"Треб. В+У = {round(required, 1)} фут. Макс. цилиндр = {max(std_cyl)}'."
+            )
+
         return {
-            "has_data":    True,
-            "pump_type":   pump_type_key,
-            "K":           K,
-            "P":           P,
-            "plunger_mm":  plunger_mm,
+            "has_data":     True,
+            "pump_type":    pump_type_key,
+            "K":            K,
+            "P":            P,
+            "plunger_mm":   plunger_mm,
             "plunger_note": plunger_note,
-            "N_ft":        round(N, 3),
-            "stroke_mm":   round(stroke_mm),
-            "required_BU": round(required, 3),
-            "results":     results[:3],
-            "note":        None,
+            "N_ft":         round(N, 3),
+            "stroke_mm":    round(stroke_mm),
+            "required_BU":  round(required, 3),
+            "results":      results[:3],
+            "note":         overflow_note,
+            "appendix_b":   appendix is not None,  # флаг: данные из Приложения Б
         }
 
     else:
-        # Тип насоса не выбран — даём диапазон
+        # Тип насоса не выбран — диапазон по всем возможным К
         K_min, K_max = 1.178, 2.293
         req_min = N + P + K_min
         req_max = N + P + K_max
@@ -546,10 +666,12 @@ def get_cylinder_recommendation(answers_dict, flow_rec=None):
             "required_BU":  None,
             "req_range":    (round(req_min, 1), round(req_max, 1)),
             "results":      [],
-            "note":         f"Укажите тип насоса для точного расчёта. "
-                            f"Ориентировочная В+У: {round(req_min, 1)}–{round(req_max, 1)} фута.",
+            "note":         (
+                f"Укажите тип насоса для точного расчёта. "
+                f"Ориентировочная В+У: {round(req_min, 1)}–{round(req_max, 1)} фута."
+            ),
+            "appendix_b":   False,
         }
-
 
 def get_fit_recommendation(answers_dict):
     """
@@ -690,12 +812,13 @@ def get_fit_recommendation(answers_dict):
 
     }
 
-def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None):
+def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None, custom_plunger_length=None):
     """
     Подбор оптимальных параметров насоса по требуемой подаче.
  
     custom_spm  — число качаний, заданное менеджером вручную (int/float)
     custom_eta  — коэффициент подачи (0..1), заданный менеджером вручную
+    custom_plunger_length - значение длины хода плунжера из опросника
     """
     import math
  
@@ -719,6 +842,18 @@ def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None):
     }
     RH_SIZES = ["106", "125", "150", "175", "225"]
     TH_SIZES = ["125", "175", "225", "275"]
+
+    if custom_plunger_length is None:
+        raw_pl = answers_dict.get("plunger_length")
+        if raw_pl:
+            try:
+                custom_plunger_length = float(str(raw_pl).replace(",", "."))
+            except:
+                custom_plunger_length = None
+    
+    if custom_plunger_length is not None:
+        STD_STROKES = [int(custom_plunger_length)]
+        TABLE_STROKES = [int(custom_plunger_length)]
  
     volume_raw = answers_dict.get("V_otkach_zhidkosti", "")
     try:
@@ -878,7 +1013,6 @@ def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None):
         "table_strokes":  TABLE_STROKES,
         "opt_spm_label":  opt_spm,
         "formula":        formula,
-        # передаём обратно для отображения в шаблоне
         "eta":            eta,
         "custom_spm":     custom_spm,
     }
