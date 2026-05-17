@@ -1016,4 +1016,338 @@ def get_flow_recommendation(answers_dict, custom_spm=None, custom_eta=None, cust
         "eta":            eta,
         "custom_spm":     custom_spm,
     }
- 
+
+def get_drive_recommendation(answers_dict, flow_rec=None):
+    """
+    Подбор привода (станка-качалки) ОАО Ижнефтемаш.
+    Все нагрузки — в Н (ньютонах), как в презентации «Приводы ШГН» 2023 г.
+
+    Менеджер вводит нагрузку на устьевой шток в Н.
+    Система сравнивает с паспортными значениями из каталога и подбирает
+    модель + исполнение (редуктор, шкив, двигатель) по числу качаний.
+    """
+
+    DRIVES = [
+        # ── ПНШ 60-2,1-28 (слайд 5) ──────────────────────────────────────
+        {
+            "id":                "pnsh60-2.1-28",
+            "name":              "ПНШ 60-2,1-28",
+            "load_N":            60_000,
+            "max_stroke_m":      2.1,
+            "stroke_variants_m": [2.1, 1.8, 1.5, 1.2, 0.9],
+            "torque_Nm":         28_000,
+            "api_equiv":         "С-248-135-83",
+            "spm_variants":      [],   # таблицы в презентации нет
+            "note":              "Редуктор РП450-28, i=39. Таблица числа качаний в презентации не представлена.",
+        },
+
+        # ── ПНШ 60-3-28 / ПНШТ 60-3-28 (слайд 6) ────────────────────────
+        {
+            "id":                "pnsh60-3-28",
+            "name":              "ПНШ 60-3-28 / ПНШТ 60-3-28",
+            "load_N":            60_000,
+            "max_stroke_m":      3.0,
+            "stroke_variants_m": [3.0, 2.5, 2.0, 1.6, 1.2],
+            "torque_Nm":         28_000,
+            "api_equiv":         "С-248-135-118",
+            "spm_variants": [
+                # РТ 28-125
+                {"designation": "ПНШ(Т)60-3,0-28-125",    "reducer": "РТ 28-125", "spm": 1.3,  "pulley_mm": 200, "motor_kw": 5.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-125",    "reducer": "РТ 28-125", "spm": 1.6,  "pulley_mm": 250, "motor_kw": 5.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-125",    "reducer": "РТ 28-125", "spm": 1.8,  "pulley_mm": 280, "motor_kw": 5.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-125-01", "reducer": "РТ 28-125", "spm": 1.7,  "pulley_mm": 200, "motor_kw": 7.5,  "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-125-01", "reducer": "РТ 28-125", "spm": 2.1,  "pulley_mm": 250, "motor_kw": 7.5,  "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-125-01", "reducer": "РТ 28-125", "spm": 2.4,  "pulley_mm": 280, "motor_kw": 7.5,  "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-125-02", "reducer": "РТ 28-125", "spm": 2.5,  "pulley_mm": 200, "motor_kw": 11,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-125-02", "reducer": "РТ 28-125", "spm": 3.2,  "pulley_mm": 250, "motor_kw": 11,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-125-02", "reducer": "РТ 28-125", "spm": 3.6,  "pulley_mm": 280, "motor_kw": 11,   "motor_rpm": 1500},
+                # РТ 28-90
+                {"designation": "ПНШ(Т)60-3,0-28-90",     "reducer": "РТ 28-90",  "spm": 1.8,  "pulley_mm": 200, "motor_kw": 7.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-90",     "reducer": "РТ 28-90",  "spm": 2.2,  "pulley_mm": 250, "motor_kw": 7.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-90",     "reducer": "РТ 28-90",  "spm": 2.5,  "pulley_mm": 280, "motor_kw": 7.5,  "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-90-01",  "reducer": "РТ 28-90",  "spm": 2.4,  "pulley_mm": 200, "motor_kw": 11,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-90-01",  "reducer": "РТ 28-90",  "spm": 3.0,  "pulley_mm": 250, "motor_kw": 11,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-90-01",  "reducer": "РТ 28-90",  "spm": 3.4,  "pulley_mm": 280, "motor_kw": 11,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-90-02",  "reducer": "РТ 28-90",  "spm": 3.6,  "pulley_mm": 200, "motor_kw": 15,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-90-02",  "reducer": "РТ 28-90",  "spm": 4.5,  "pulley_mm": 250, "motor_kw": 15,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-90-02",  "reducer": "РТ 28-90",  "spm": 5.0,  "pulley_mm": 280, "motor_kw": 15,   "motor_rpm": 1500},
+                # РТ 28-63
+                {"designation": "ПНШ(Т)60-3,0-28-63",     "reducer": "РТ 28-63",  "spm": 2.6,  "pulley_mm": 200, "motor_kw": 11,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-63",     "reducer": "РТ 28-63",  "spm": 3.2,  "pulley_mm": 250, "motor_kw": 11,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-63",     "reducer": "РТ 28-63",  "spm": 3.6,  "pulley_mm": 280, "motor_kw": 11,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-63-01",  "reducer": "РТ 28-63",  "spm": 3.4,  "pulley_mm": 200, "motor_kw": 15,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-63-01",  "reducer": "РТ 28-63",  "spm": 4.3,  "pulley_mm": 250, "motor_kw": 15,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-63-01",  "reducer": "РТ 28-63",  "spm": 4.8,  "pulley_mm": 280, "motor_kw": 15,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-63-02",  "reducer": "РТ 28-63",  "spm": 5.1,  "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-63-02",  "reducer": "РТ 28-63",  "spm": 6.4,  "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-63-02",  "reducer": "РТ 28-63",  "spm": 7.2,  "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 1500},
+                # РП 450-28
+                {"designation": "ПНШ(Т)60-3,0-28-40",     "reducer": "РП 450-28", "spm": 4.3,  "pulley_mm": 200, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-40",     "reducer": "РП 450-28", "spm": 5.4,  "pulley_mm": 250, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-40",     "reducer": "РП 450-28", "spm": 6.0,  "pulley_mm": 280, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)60-3,0-28-40-01",  "reducer": "РП 450-28", "spm": 5.8,  "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-40-01",  "reducer": "РП 450-28", "spm": 7.2,  "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-40-01",  "reducer": "РП 450-28", "spm": 8.1,  "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)60-3,0-28-40-02",  "reducer": "РП 450-28", "spm": 8.5,  "pulley_mm": 200, "motor_kw": 22,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-40-02",  "reducer": "РП 450-28", "spm": 10.8, "pulley_mm": 250, "motor_kw": 22,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)60-3,0-28-40-02",  "reducer": "РП 450-28", "spm": 12.0, "pulley_mm": 280, "motor_kw": 22,   "motor_rpm": 1500},
+            ],
+            "note": "Серийный. Складная стойка, небольшой вес.",
+        },
+
+        # ── ПНШТ 70-1,9-28 (слайд 3) ─────────────────────────────────────
+        {
+            "id":                "pnsht70-1.9-28",
+            "name":              "ПНШТ 70-1,9-28",
+            "load_N":            70_000,
+            "max_stroke_m":      1.9,
+            "stroke_variants_m": [1.9],
+            "torque_Nm":         28_000,
+            "api_equiv":         "С-248-157-74",
+            "spm_variants":      [],
+            "note":              "Таблица числа качаний в презентации не представлена.",
+        },
+
+        # ── ПНШ(Т) 80-3-40 / ПНШ(Т) 80-3,5-40 (слайды 8, 9) ────────────
+        {
+            "id":                "pnsh80-3.5-40",
+            "name":              "ПНШ(Т) 80-3,5-40 / ПНШ(Т) 80-3,0-40",
+            "load_N":            80_000,
+            "max_stroke_m":      3.5,
+            "stroke_variants_m": [3.5, 3.0, 2.9, 2.5, 2.0, 1.6, 1.2],
+            "torque_Nm":         40_000,
+            "api_equiv":         "С-354-180-138 / С-354-180-118",
+            "spm_variants": [
+                # РТ 40-125
+                {"designation": "ПНШ(Т)80-...-125",    "reducer": "РТ 40-125", "spm": 1.3,  "pulley_mm": 200, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-125",    "reducer": "РТ 40-125", "spm": 1.6,  "pulley_mm": 250, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-125",    "reducer": "РТ 40-125", "spm": 1.8,  "pulley_mm": 280, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-125-01", "reducer": "РТ 40-125", "spm": 1.7,  "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-125-01", "reducer": "РТ 40-125", "spm": 2.1,  "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-125-01", "reducer": "РТ 40-125", "spm": 2.4,  "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-125-02", "reducer": "РТ 40-125", "spm": 2.5,  "pulley_mm": 200, "motor_kw": 22,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-125-02", "reducer": "РТ 40-125", "spm": 3.2,  "pulley_mm": 250, "motor_kw": 22,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-125-02", "reducer": "РТ 40-125", "spm": 3.6,  "pulley_mm": 280, "motor_kw": 22,   "motor_rpm": 1500},
+                # РТ 40-90
+                {"designation": "ПНШ(Т)80-...-90",     "reducer": "РТ 40-90",  "spm": 1.9,  "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-90",     "reducer": "РТ 40-90",  "spm": 2.3,  "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-90",     "reducer": "РТ 40-90",  "spm": 2.6,  "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-90-01",  "reducer": "РТ 40-90",  "spm": 2.5,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-90-01",  "reducer": "РТ 40-90",  "spm": 3.1,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-90-01",  "reducer": "РТ 40-90",  "spm": 3.5,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-90-02",  "reducer": "РТ 40-90",  "spm": 3.7,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-90-02",  "reducer": "РТ 40-90",  "spm": 4.6,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-90-02",  "reducer": "РТ 40-90",  "spm": 5.2,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1500},
+                # РТ 40-63
+                {"designation": "ПНШ(Т)80-...-63",     "reducer": "РТ 40-63",  "spm": 2.6,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-63",     "reducer": "РТ 40-63",  "spm": 3.3,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-63",     "reducer": "РТ 40-63",  "spm": 3.7,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-63-01",  "reducer": "РТ 40-63",  "spm": 3.5,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-63-01",  "reducer": "РТ 40-63",  "spm": 4.4,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-63-01",  "reducer": "РТ 40-63",  "spm": 4.9,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-63-02",  "reducer": "РТ 40-63",  "spm": 5.3,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-63-02",  "reducer": "РТ 40-63",  "spm": 6.6,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-63-02",  "reducer": "РТ 40-63",  "spm": 7.4,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1500},
+                # РП 450
+                {"designation": "ПНШ(Т)80-...-37",     "reducer": "РП 450",    "spm": 4.3,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-37",     "reducer": "РП 450",    "spm": 5.4,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-37",     "reducer": "РП 450",    "spm": 6.0,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШ(Т)80-...-37-01",  "reducer": "РП 450",    "spm": 5.8,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-37-01",  "reducer": "РП 450",    "spm": 7.2,  "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-37-01",  "reducer": "РП 450",    "spm": 8.1,  "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШ(Т)80-...-37-02",  "reducer": "РП 450",    "spm": 8.5,  "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-37-02",  "reducer": "РП 450",    "spm": 10.8, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШ(Т)80-...-37-02",  "reducer": "РП 450",    "spm": 12.0, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1500},
+            ],
+            "note": "Широкий диапазон чисел качаний. Редукторы РП450 или РТ40.",
+        },
+
+        # ── ПНШТ 100-3,5-60 / ПНШТ 100-3,0-60 (слайд 11) ────────────────
+        {
+            "id":                "pnsht100-3.5-60",
+            "name":              "ПНШТ 100-3,5-60 / ПНШТ 100-3,0-60",
+            "load_N":            100_000,
+            "max_stroke_m":      3.5,
+            "stroke_variants_m": [3.5, 3.0, 2.9, 2.4, 2.1, 2.0, 1.7, 1.6, 1.3],
+            "torque_Nm":         60_000,
+            "api_equiv":         "С-531-225-138 / С-531-225-118",
+            "spm_variants": [
+                # РТ 58-100
+                {"designation": "ПНШТ100-...-100",    "reducer": "РТ 58-100", "spm": 1.7, "pulley_mm": 200, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-100",    "reducer": "РТ 58-100", "spm": 2.1, "pulley_mm": 250, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-100",    "reducer": "РТ 58-100", "spm": 2.4, "pulley_mm": 280, "motor_kw": 15,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-100-01", "reducer": "РТ 58-100", "spm": 2.3, "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-100-01", "reducer": "РТ 58-100", "spm": 2.8, "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-100-01", "reducer": "РТ 58-100", "spm": 3.2, "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-100-02", "reducer": "РТ 58-100", "spm": 3.4, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-100-02", "reducer": "РТ 58-100", "spm": 4.3, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-100-02", "reducer": "РТ 58-100", "spm": 4.8, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1500},
+                # РТ 58-80
+                {"designation": "ПНШТ100-...-80",    "reducer": "РТ 58-80",  "spm": 2.1, "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-80",    "reducer": "РТ 58-80",  "spm": 2.6, "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-80",    "reducer": "РТ 58-80",  "spm": 2.9, "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-80-01", "reducer": "РТ 58-80",  "spm": 2.8, "pulley_mm": 200, "motor_kw": 22,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-80-01", "reducer": "РТ 58-80",  "spm": 3.4, "pulley_mm": 250, "motor_kw": 22,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-80-01", "reducer": "РТ 58-80",  "spm": 3.9, "pulley_mm": 280, "motor_kw": 22,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-80-02", "reducer": "РТ 58-80",  "spm": 4.1, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-80-02", "reducer": "РТ 58-80",  "spm": 5.2, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-80-02", "reducer": "РТ 58-80",  "spm": 5.8, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1500},
+                # РТ 58-68
+                {"designation": "ПНШТ100-...-68",    "reducer": "РТ 58-68",  "spm": 2.5, "pulley_mm": 200, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-68",    "reducer": "РТ 58-68",  "spm": 3.1, "pulley_mm": 250, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-68",    "reducer": "РТ 58-68",  "spm": 3.4, "pulley_mm": 280, "motor_kw": 18.5, "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-68-01", "reducer": "РТ 58-68",  "spm": 3.3, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-68-01", "reducer": "РТ 58-68",  "spm": 4.1, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-68-01", "reducer": "РТ 58-68",  "spm": 4.6, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-68-02", "reducer": "РТ 58-68",  "spm": 4.9, "pulley_mm": 200, "motor_kw": 37,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-68-02", "reducer": "РТ 58-68",  "spm": 6.1, "pulley_mm": 250, "motor_kw": 37,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-68-02", "reducer": "РТ 58-68",  "spm": 6.9, "pulley_mm": 280, "motor_kw": 37,   "motor_rpm": 1500},
+                # РТ 58-63
+                {"designation": "ПНШТ100-...-63",    "reducer": "РТ 58-63",  "spm": 2.7, "pulley_mm": 200, "motor_kw": 22,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-63",    "reducer": "РТ 58-63",  "spm": 3.4, "pulley_mm": 250, "motor_kw": 22,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-63",    "reducer": "РТ 58-63",  "spm": 3.8, "pulley_mm": 280, "motor_kw": 22,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-63-01", "reducer": "РТ 58-63",  "spm": 3.7, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-63-01", "reducer": "РТ 58-63",  "spm": 4.6, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-63-01", "reducer": "РТ 58-63",  "spm": 5.1, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-63-02", "reducer": "РТ 58-63",  "spm": 5.5, "pulley_mm": 200, "motor_kw": 37,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-63-02", "reducer": "РТ 58-63",  "spm": 6.9, "pulley_mm": 250, "motor_kw": 37,   "motor_rpm": 1500},
+                {"designation": "ПНШТ100-...-63-02", "reducer": "РТ 58-63",  "spm": 7.7, "pulley_mm": 280, "motor_kw": 37,   "motor_rpm": 1500},
+                # РТ 58-50
+                {"designation": "ПНШТ100-...-50",    "reducer": "РТ 58-50",  "spm": 3.4, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-50",    "reducer": "РТ 58-50",  "spm": 4.2, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-50",    "reducer": "РТ 58-50",  "spm": 4.7, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-50-01", "reducer": "РТ 58-50",  "spm": 4.5, "pulley_mm": 200, "motor_kw": 37,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-50-01", "reducer": "РТ 58-50",  "spm": 5.6, "pulley_mm": 250, "motor_kw": 37,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-50-01", "reducer": "РТ 58-50",  "spm": 6.3, "pulley_mm": 280, "motor_kw": 37,   "motor_rpm": 1000},
+                # РТ 58-40
+                {"designation": "ПНШТ100-...-40",    "reducer": "РТ 58-40",  "spm": 4.1, "pulley_mm": 200, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-40",    "reducer": "РТ 58-40",  "spm": 5.1, "pulley_mm": 250, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-40",    "reducer": "РТ 58-40",  "spm": 5.7, "pulley_mm": 280, "motor_kw": 30,   "motor_rpm": 750},
+                {"designation": "ПНШТ100-...-40-01", "reducer": "РТ 58-40",  "spm": 5.4, "pulley_mm": 200, "motor_kw": 37,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-40-01", "reducer": "РТ 58-40",  "spm": 6.8, "pulley_mm": 250, "motor_kw": 37,   "motor_rpm": 1000},
+                {"designation": "ПНШТ100-...-40-01", "reducer": "РТ 58-40",  "spm": 7.6, "pulley_mm": 280, "motor_kw": 37,   "motor_rpm": 1000},
+            ],
+            "note": "Редукторы РТ-58 (3-ст.) и РД-58 (2-ст.), крут. момент 60 кН·м.",
+        },
+
+        # ── ПНШТ 120-3-60 (слайд 13) ─────────────────────────────────────
+        {
+            "id":                "pnsht120-3-60",
+            "name":              "ПНШТ 120-3-60",
+            "load_N":            120_000,
+            "max_stroke_m":      3.0,
+            "stroke_variants_m": [3.0, 2.5, 2.1, 1.8, 1.4],
+            "torque_Nm":         60_000,
+            "api_equiv":         "С-531-270-118",
+            "spm_variants": [
+                # i=90
+                {"designation": "ПНШТ120-3-60-90",    "reducer": "РТ 58, i=90", "spm": 1.8, "pulley_mm": 200, "motor_kw": 22, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-90",    "reducer": "РТ 58, i=90", "spm": 2.3, "pulley_mm": 250, "motor_kw": 22, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-90",    "reducer": "РТ 58, i=90", "spm": 2.5, "pulley_mm": 280, "motor_kw": 22, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-90-01", "reducer": "РТ 58, i=90", "spm": 2.4, "pulley_mm": 200, "motor_kw": 30, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-90-01", "reducer": "РТ 58, i=90", "spm": 3.0, "pulley_mm": 250, "motor_kw": 30, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-90-01", "reducer": "РТ 58, i=90", "spm": 3.4, "pulley_mm": 280, "motor_kw": 30, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-90-02", "reducer": "РТ 58, i=90", "spm": 3.7, "pulley_mm": 200, "motor_kw": 37, "motor_rpm": 1500},
+                {"designation": "ПНШТ120-3-60-90-02", "reducer": "РТ 58, i=90", "spm": 4.6, "pulley_mm": 250, "motor_kw": 37, "motor_rpm": 1500},
+                {"designation": "ПНШТ120-3-60-90-02", "reducer": "РТ 58, i=90", "spm": 5.1, "pulley_mm": 280, "motor_kw": 37, "motor_rpm": 1500},
+                # i=68
+                {"designation": "ПНШТ120-3-60-68",    "reducer": "РТ 58, i=68", "spm": 2.4, "pulley_mm": 200, "motor_kw": 30, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-68",    "reducer": "РТ 58, i=68", "spm": 3.0, "pulley_mm": 250, "motor_kw": 30, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-68",    "reducer": "РТ 58, i=68", "spm": 3.4, "pulley_mm": 280, "motor_kw": 30, "motor_rpm": 750},
+                {"designation": "ПНШТ120-3-60-68-01", "reducer": "РТ 58, i=68", "spm": 3.2, "pulley_mm": 200, "motor_kw": 37, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-68-01", "reducer": "РТ 58, i=68", "spm": 4.0, "pulley_mm": 250, "motor_kw": 37, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-68-01", "reducer": "РТ 58, i=68", "spm": 4.5, "pulley_mm": 280, "motor_kw": 37, "motor_rpm": 1000},
+                {"designation": "ПНШТ120-3-60-68-02", "reducer": "РТ 58, i=68", "spm": 4.9, "pulley_mm": 200, "motor_kw": 45, "motor_rpm": 1500},
+                {"designation": "ПНШТ120-3-60-68-02", "reducer": "РТ 58, i=68", "spm": 6.1, "pulley_mm": 250, "motor_kw": 45, "motor_rpm": 1500},
+                {"designation": "ПНШТ120-3-60-68-02", "reducer": "РТ 58, i=68", "spm": 6.8, "pulley_mm": 280, "motor_kw": 45, "motor_rpm": 1500},
+            ],
+            "note": "Максимальная грузоподъёмность в линейке ИНМ. Комбинированное уравновешивание.",
+        },
+    ]
+
+    # ── Входные параметры ─────────────────────────────────────────────────
+    # Нагрузка в Н — вводится менеджером вручную
+    custom_load_N = answers_dict.get("_custom_load_N")
+
+    # Длина хода из flow_rec (мм → м)
+    required_stroke_m  = None
+    required_stroke_mm = None
+    if flow_rec and flow_rec.get("has_data") and not flow_rec.get("overflow"):
+        required_stroke_mm = flow_rec.get("opt_stroke")
+        if required_stroke_mm:
+            required_stroke_m = required_stroke_mm / 1000.0
+
+    # Число качаний из flow_rec
+    required_spm = None
+    if flow_rec and flow_rec.get("has_data") and not flow_rec.get("overflow"):
+        required_spm = flow_rec.get("opt_spm")
+
+    # Нагрузка не задана — возвращаем только каталог
+    if custom_load_N is None:
+        return {
+            "has_data":           True,
+            "load_not_set":       True,
+            "required_stroke_mm": required_stroke_mm,
+            "required_spm":       required_spm,
+            "drives":             DRIVES,
+            "suitable_drives":    [],
+            "best_drive":         None,
+            "best_variants":      [],
+        }
+
+    load_N = float(custom_load_N)
+
+    # ── Шаг 1: фильтрация по нагрузке и длине хода ───────────────────────
+    suitable_drives = []
+    for drive in DRIVES:
+        load_ok   = drive["load_N"] >= load_N
+        stroke_ok = (required_stroke_m is None) or (drive["max_stroke_m"] >= required_stroke_m)
+        if load_ok and stroke_ok:
+            suitable_drives.append(drive)
+
+    if not suitable_drives:
+        return {
+            "has_data":           True,
+            "load_not_set":       False,
+            "load_N":             round(load_N),
+            "required_stroke_mm": required_stroke_mm,
+            "required_spm":       required_spm,
+            "suitable_drives":    [],
+            "no_match":           True,
+            "best_drive":         None,
+            "best_variants":      [],
+        }
+
+    # Сортируем: наименьшая достаточная грузоподъёмность — первая
+    suitable_drives.sort(key=lambda d: d["load_N"])
+    best_drive = suitable_drives[0]
+
+    # ── Шаг 2: подбор исполнения по числу качаний ────────────────────────
+    best_variants = []
+    if required_spm is not None and best_drive["spm_variants"]:
+        candidates = sorted(
+            best_drive["spm_variants"],
+            key=lambda v: abs(v["spm"] - required_spm)
+        )
+        min_diff = abs(candidates[0]["spm"] - required_spm)
+        for v in candidates:
+            if abs(v["spm"] - required_spm) <= max(0.3, min_diff + 0.01):
+                best_variants.append(v)
+            if len(best_variants) >= 6:
+                break
+    elif best_drive["spm_variants"]:
+        all_v = best_drive["spm_variants"]
+        best_variants = all_v[:3] + (all_v[-3:] if len(all_v) > 6 else [])
+
+    return {
+        "has_data":           True,
+        "load_not_set":       False,
+        "load_N":             round(load_N),
+        "required_stroke_mm": required_stroke_mm,
+        "required_stroke_m":  required_stroke_m,
+        "required_spm":       required_spm,
+        "suitable_drives":    suitable_drives,
+        "best_drive":         best_drive,
+        "best_variants":      best_variants,
+        "no_match":           False,
+    }

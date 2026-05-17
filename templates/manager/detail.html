@@ -966,8 +966,18 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:10px;">
                 {% for r in cylinder_rec.results %}
                   <div class="cyl-variant-card" data-cyl="{{ r.V }}-{{ cylinder_rec.P }}-{{ r.u1 }}-{{ r.u2 }}"
-                    style="padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
-                    transition:all .15s;{% if forloop.first %}outline:2px solid #3b82f6;outline-offset:2px;{% endif %}">
+                      onclick="
+                        document.querySelectorAll('.cyl-variant-card').forEach(c => { c.style.outline=''; c.style.outlineOffset=''; });
+                        this.style.outline='2px solid #3b82f6';
+                        this.style.outlineOffset='2px';
+                        API.cylLen  = '{{ r.V }}';
+                        API.plunLen = '{{ cylinder_rec.P }}';
+                        API.ext1    = '{{ r.u1 }}';
+                        API.ext2    = '{{ r.u2 }}';
+                        renderPanel();
+                      "
+                      style="padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+                      cursor:pointer;transition:all .15s;{% if forloop.first %}outline:2px solid #3b82f6;outline-offset:2px;{% endif %}">
                     <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Удлинители {{ r.U }} фут. ({{ r.u1 }}' + {{ r.u2 }}')</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                       <span style="padding:6px 12px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;font-size:13px;font-weight:800;color:#166534;">Цилиндр: {{ r.V }}'</span>
@@ -1056,6 +1066,265 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       {% endif %}
+
+{% if drive_rec and drive_rec.has_data %}
+<div class="rec2-block" style="margin-bottom:20px;">
+  <div class="rec2-head">
+    <div class="rec2-head-title">
+      Подбор привода (станка-качалки)
+      {% if drive_rec.best_drive and not drive_rec.load_not_set %}
+        — {{ drive_rec.best_drive.name }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="rec2-body">
+ 
+    {# ── Форма ввода нагрузки ── #}
+    <div style="padding:16px 20px;border-bottom:1px solid var(--line);
+      background:#f9fafb;margin:-20px -20px 20px;">
+      <form method="post" action="{% url 'manager_update_flow_params' submission_id=sub.id %}"
+            style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;">
+        {% csrf_token %}
+        {# Сохраняем уже введённые N и η #}
+        <input type="hidden" name="custom_spm" value="{{ custom_spm|default:'' }}">
+        <input type="hidden" name="custom_eta" value="{{ custom_eta|default:'' }}">
+ 
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:10px;font-weight:800;color:var(--rimera-grey);
+                        text-transform:uppercase;letter-spacing:.7px;">
+            Нагрузка на устьевой шток, Н
+          </label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input
+              type="number"
+              name="custom_load_N"
+              min="1000" max="150000" step="100"
+              placeholder="напр. 80000"
+              value="{{ custom_load_N|default:'' }}"
+              style="width:180px;padding:8px 10px;border:1px solid var(--line);
+                     border-radius:var(--radius);font-size:13px;font-family:inherit;
+                     background:#fff;
+                     {% if custom_load_N %}border-color:#3b82f6;{% endif %}"
+            />
+            <button type="submit"
+                    style="padding:8px 20px;background:var(--rimera-red);color:#fff;
+                           border:none;border-radius:var(--radius);font-size:13px;
+                           font-weight:700;cursor:pointer;font-family:inherit;">
+              Подобрать
+            </button>
+            {% if custom_load_N %}
+              <button type="submit"
+                      onclick="this.form.querySelector('[name=custom_load_N]').value='';"
+                      style="padding:8px 14px;background:#fff;color:var(--muted);
+                             border:1px solid var(--line);border-radius:var(--radius);
+                             font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
+                Сбросить
+              </button>
+            {% endif %}
+          </div>
+          {% if custom_load_N %}
+            <div style="font-size:10px;color:#1d4ed8;font-weight:700;">
+              ✓ задано: {{ custom_load_N|floatformat:0 }} Н
+            </div>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+ 
+    {% if drive_rec.load_not_set %}
+      {# ── Нагрузка не задана — полная таблица каталога ── #}
+      <div style="padding:10px 14px;border-radius:10px;background:#fffbeb;
+        border:1px solid #fde68a;font-size:13px;color:#92400e;margin-bottom:16px;">
+        Введите нагрузку на устьевой шток в Н для подбора привода.
+        {% if drive_rec.required_stroke_mm %}
+          Длина хода из расчёта: <b>{{ drive_rec.required_stroke_mm }} мм</b>.
+        {% endif %}
+        {% if drive_rec.required_spm %}
+          Число качаний: <b>{{ drive_rec.required_spm }} ход/мин</b>.
+        {% endif %}
+      </div>
+ 
+      <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+        letter-spacing:.5px;margin-bottom:10px;">Каталог приводов </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Обозначение</th>
+              <th>Нагрузка, Н</th>
+              <th>Макс. ход, м</th>
+              <th>Момент ред., Н·м</th>
+              <th>API-эквивалент</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in drive_rec.drives %}
+              <tr>
+                <td><b>{{ d.name }}</b></td>
+                <td>{{ d.load_N }}</td>
+                <td>{{ d.max_stroke_m }}</td>
+                <td>{{ d.torque_Nm }}</td>
+                <td style="font-size:11px;color:var(--muted);">{{ d.api_equiv }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+ 
+    {% elif drive_rec.no_match %}
+      {# ── Нет подходящих ── #}
+      <div style="padding:14px 16px;border-radius:12px;border:1px solid #fecdd3;
+        background:#fff1f2;font-size:13px;color:#be123c;">
+        ⚠ Ни один привод не подходит: нагрузка {{ drive_rec.load_N }} Н
+        {% if drive_rec.required_stroke_mm %}
+          при ходе {{ drive_rec.required_stroke_mm }} мм
+        {% endif %}
+        превышает возможности каталога.
+        Максимум в линейке ИНМ — <b>120 000 Н (ПНШТ 120-3-60)</b>.
+      </div>
+ 
+    {% else %}
+      {# ── Результат подбора ── #}
+      <div class="meta-row" style="margin-bottom:20px;">
+        <div class="meta-item" style="border:2px solid var(--rimera-red);background:#fff9f9;">
+          <div class="label" style="color:var(--rimera-red);">Нагрузка</div>
+          <div class="value" style="color:var(--rimera-red);">{{ drive_rec.load_N }} Н</div>
+        </div>
+        {% if drive_rec.required_stroke_mm %}
+          <div class="meta-item">
+            <div class="label">Длина хода</div>
+            <div class="value">{{ drive_rec.required_stroke_mm }} мм</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">из расчёта подачи</div>
+          </div>
+        {% endif %}
+        {% if drive_rec.required_spm %}
+          <div class="meta-item">
+            <div class="label">Число качаний</div>
+            <div class="value">{{ drive_rec.required_spm }} ход/мин</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">из расчёта подачи</div>
+          </div>
+        {% endif %}
+      </div>
+ 
+      {# Карточки подходящих приводов #}
+      <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+        letter-spacing:.5px;margin-bottom:10px;">
+        Подходящие приводы ({{ drive_rec.suitable_drives|length }})
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+        gap:10px;margin-bottom:20px;">
+        {% for d in drive_rec.suitable_drives %}
+          <div style="padding:14px;border-radius:12px;
+            {% if forloop.first %}
+              border:2px solid #22c55e;background:#f0fdf4;
+            {% else %}
+              border:1px solid var(--line);background:var(--bg);
+            {% endif %}">
+ 
+            <div style="display:flex;align-items:center;justify-content:space-between;
+              margin-bottom:6px;gap:8px;">
+              <span style="font-size:14px;font-weight:900;
+                {% if forloop.first %}color:#166534;{% else %}color:var(--rimera-grey);{% endif %}">
+                {{ d.name }}
+              </span>
+              {% if forloop.first %}
+                <span style="font-size:10px;padding:2px 8px;border-radius:999px;
+                  background:#22c55e;color:#fff;font-weight:800;white-space:nowrap;flex-shrink:0;">
+                  оптимальный
+                </span>
+              {% endif %}
+            </div>
+ 
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">
+              {{ d.api_equiv }}
+            </div>
+ 
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;
+              margin-bottom:8px;">
+              <div><span style="color:var(--muted);">Нагрузка:</span> <b>{{ d.load_N }} Н</b></div>
+              <div><span style="color:var(--muted);">Макс. ход:</span> <b>{{ d.max_stroke_m }} м</b></div>
+              <div><span style="color:var(--muted);">Момент:</span> <b>{{ d.torque_Nm }} Н·м</b></div>
+            </div>
+ 
+            {# Варианты длины хода #}
+            {% if d.stroke_variants_m %}
+              <div style="margin-top:8px;font-size:11px;color:var(--muted);">
+                Длины хода:
+                {% for s in d.stroke_variants_m %}
+                  <span style="display:inline-block;padding:1px 6px;border-radius:4px;margin:1px;
+                    {% if drive_rec.required_stroke_m and s == drive_rec.required_stroke_m %}
+                      background:#22c55e;color:#fff;font-weight:700;
+                    {% elif drive_rec.required_stroke_m and s >= drive_rec.required_stroke_m %}
+                      background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;
+                    {% else %}
+                      background:#f3f4f6;border:1px solid var(--line);
+                    {% endif %}">
+                    {{ s }} м
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
+ 
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">
+              {{ d.note }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+ 
+      {# Таблица исполнений по числу качаний #}
+      {% if drive_rec.best_variants %}
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+          letter-spacing:.5px;margin-bottom:10px;">
+          Исполнения {{ drive_rec.best_drive.name }}
+          {% if drive_rec.required_spm %}при N = {{ drive_rec.required_spm }} ход/мин{% endif %}
+        </div>
+        <div class="table-wrap" style="margin-bottom:16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Обозначение исполнения</th>
+                <th>Редуктор</th>
+                <th>N, ход/мин</th>
+                <th>Шкив дв., мм</th>
+                <th>Двигатель, кВт</th>
+                <th>n дв., об/мин</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in drive_rec.best_variants %}
+                <tr {% if drive_rec.required_spm and v.spm == drive_rec.required_spm %}
+                  style="background:#f0fdf4;"{% endif %}>
+                  <td><b>{{ v.designation }}</b></td>
+                  <td>{{ v.reducer }}</td>
+                  <td style="font-weight:700;
+                    {% if drive_rec.required_spm and v.spm == drive_rec.required_spm %}
+                      color:#166534;{% endif %}">
+                    {{ v.spm }}
+                  </td>
+                  <td>{{ v.pulley_mm }}</td>
+                  <td>{{ v.motor_kw }}</td>
+                  <td>{{ v.motor_rpm }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% elif drive_rec.best_drive and not drive_rec.best_drive.spm_variants %}
+        <div style="padding:10px 14px;border-radius:10px;background:#fffbeb;
+          border:1px solid #fde68a;font-size:13px;color:#92400e;">
+          Таблица исполнений для {{ drive_rec.best_drive.name }}
+          в презентации не представлена.
+        </div>
+      {% endif %}
+
+ 
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+ 
+      
 
       {# ═══════════════════════════════════════════════════════════════ #}
       {# БЛОК: Выбор материалов (Таблица 14) #}

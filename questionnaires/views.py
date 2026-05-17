@@ -357,6 +357,7 @@ def manager_detail(request, submission_id):
         get_cylinder_recommendation,
         get_fit_recommendation,
         get_flow_recommendation,
+        get_drive_recommendation,
     )
 
     recommendation = get_pump_recommendation(answers_dict)
@@ -380,6 +381,12 @@ def manager_detail(request, submission_id):
     except (ValueError, TypeError):
         custom_eta = None
 
+    try:
+        custom_load_N = float(manager_data["custom_load_N"]) \
+            if manager_data.get("custom_load_N") not in (None, "") else None
+    except (ValueError, TypeError):
+        custom_load_N = None
+    
     # Расчёт подачи с учётом параметров менеджера
     flow_rec = get_flow_recommendation(answers_dict, custom_spm=custom_spm, custom_eta=custom_eta)
 
@@ -393,7 +400,11 @@ def manager_detail(request, submission_id):
         )
 
     cylinder_rec = get_cylinder_recommendation(calc_dict, flow_rec=flow_rec)
-    fit_rec      = get_fit_recommendation(calc_dict)
+    fit_rec = get_fit_recommendation(calc_dict)
+    drive_dict = dict(answers_dict)
+    if custom_load_N is not None:
+        drive_dict["_custom_load_N"] = custom_load_N
+    drive_rec = get_drive_recommendation(drive_dict, flow_rec=flow_rec)
 
     # Фильтрация модификаций по НКТ клиента (если указан)
     NKT_MAP = {
@@ -430,6 +441,8 @@ def manager_detail(request, submission_id):
         "custom_eta":             custom_eta,
         "all_modifications":      filtered_modifications,
         "all_modifications_json": json.dumps(filtered_modifications, ensure_ascii=False),
+        "drive_rec":    drive_rec,
+        "custom_load_N": custom_load_N,
     })
 
 
@@ -506,16 +519,23 @@ def manager_update_flow_params(request, submission_id):
                 data["custom_eta"] = eta_val
         except ValueError:
             pass
-
+    
+    load_raw = request.POST.get("custom_load_N", "").strip()
+    if load_raw == "":
+        data.pop("custom_load_N", None)
+    else:
+        try:
+            load_val = float(load_raw.replace(",", "."))
+            if load_val > 0:
+                data["custom_load_N"] = load_val
+        except ValueError:
+            pass
+        
     sub.processed_data_json = data
     sub.save()
 
     return redirect("manager_detail", submission_id=submission_id)
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _draft_key(slug: str) -> str:
     return f"draft_q_{slug}"
