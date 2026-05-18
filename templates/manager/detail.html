@@ -20,19 +20,19 @@
       </div>
       <div class="stepper">
         {% if sub.status == 'rejected' %}
-          <div class="step done"><span class="num">✓</span> Получено</div>
+          <div class="step done"><span class="num"></span> Получено</div>
           <div class="step rejected-step"><span class="num">✕</span> Отклонено</div>
         {% elif sub.status == 'submitted' %}
           <div class="step active"><span class="num">01</span> Получено</div>
           <div class="step"><span class="num">02</span> Проверка</div>
           <div class="step"><span class="num">03</span> Обработка</div>
         {% elif sub.status == 'in_review' %}
-          <div class="step done"><span class="num">✓</span> Получено</div>
+          <div class="step done"><span class="num"></span> Получено</div>
           <div class="step active"><span class="num">02</span> Проверка</div>
           <div class="step"><span class="num">03</span> Обработка</div>
         {% elif sub.status == 'processed' %}
-          <div class="step done"><span class="num">✓</span> Получено</div>
-          <div class="step done"><span class="num">✓</span> Проверка</div>
+          <div class="step done"><span class="num"></span> Получено</div>
+          <div class="step done"><span class="num"></span> Проверка</div>
           <div class="step active"><span class="num">03</span> Обработка</div>
         {% endif %}
       </div>
@@ -274,8 +274,8 @@ function setMat(id, label, value) {
 function renderPanel() {
   const tc = parseTypeCode(API.typeFull);
   const parts    = API.typeFull ? API.typeFull.trim().split(" ") : [];
-  const sizeStr  = parts[0] || "";   // "25/20-175"
-  const codeStr  = parts[1] || "";   // "RHM-T"
+  const sizeStr  = parts[0] || "";   
+  const codeStr  = parts.slice(1).join(" ");   
   
   // НКТ — первая часть size до дефиса
   const nktNum     = sizeStr.split("-")[0] || "";
@@ -311,7 +311,7 @@ function renderPanel() {
       `<span class="seg-sep">-</span>` +
       `<span class="seg-size">${innerSize || "???"}</span>` +
       `<span class="seg-sep"> </span>` +
-      `<span class="seg-r">${codeStr || "?"}</span>` +  // весь код как есть: RHM-T, THM-C и т.д.
+      `<span class="seg-r">${codeStr || "?"}</span>` +  
       `<span class="seg-sep">-</span>` +
       `<span class="seg-cyl">${cylPart}</span>`;
   } else {
@@ -332,7 +332,7 @@ function copyApiDesignation() {
   if (text && text !== "-  ") {
     navigator.clipboard.writeText(text).then(() => {
       const btns = document.querySelectorAll(".api-head-btn");
-      btns.forEach(b => { b.textContent = "✓ Скопировано"; });
+      btns.forEach(b => { b.textContent = "Скопировано"; });
       setTimeout(() => btns.forEach(b => b.textContent = "Копировать"), 2000);
     });
   }
@@ -340,7 +340,6 @@ function copyApiDesignation() {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!SELECTED_SIZE || !SELECTED_FULL) return;
-
   // Определяем тип из полного обозначения
   const selectedParts = SELECTED_FULL.split(' ');
   const selectedCode  = selectedParts[1] || '';
@@ -362,11 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!mods.length) return;
 
-  // Подсвечиваем кнопку размера
+  // Подсвечиваем кнопку размера — только нужный тип (RH или TH)
   document.querySelectorAll('.size-select-btn').forEach(btn => {
-    const sizeMatch = btn.dataset.size === SELECTED_SIZE;
-    const typeMatch = btn.dataset.groupType === selectedType;
-    if (sizeMatch && typeMatch) {
+    if (btn.dataset.size === SELECTED_SIZE &&
+        btn.dataset.groupType === selectedType) {
       btn.style.border     = '1px solid #3b82f6';
       btn.style.background = '#eff6ff';
       btn.style.color      = '#1d4ed8';
@@ -422,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 />
                 <div style="font-size:10px;color:var(--muted);">
                   {% if custom_spm %}
-                    <span style="color:#1d4ed8;font-weight:700;">✓ задано: {{ custom_spm|floatformat:0 }} ход/мин</span>
+                    <span style="color:#1d4ed8;font-weight:700;">задано: {{ custom_spm|floatformat:0 }} ход/мин</span>
                   {% else %}
                     автоматически из ряда 10, 12, 14
                   {% endif %}
@@ -433,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="display:flex;flex-direction:column;gap:5px;">
                 <label style="font-size:10px;font-weight:800;color:var(--rimera-grey);
                               text-transform:uppercase;letter-spacing:.7px;">
-                  Коэффициент подачи η
+                  Коэффициент наполняемости η
                 </label>
                 <input
                   type="number"
@@ -447,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 />
                 <div style="font-size:10px;color:var(--muted);line-height:1.5;">
                   {% if custom_eta %}
-                    <span style="color:#854d0e;font-weight:700;">✓ η = {{ custom_eta }} → V<sub>факт</sub> = V<sub>идеал</sub> × {{ custom_eta }}</span>
+                    <span style="color:#854d0e;font-weight:700;">η = {{ custom_eta }} → V<sub>факт</sub> = V<sub>идеал</sub> × {{ custom_eta }}</span>
                   {% else %}
                     η = 1.0, V<sub>факт</sub> = V<sub>идеал</sub> (без потерь)
                   {% endif %}
@@ -548,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
                           font-size:11px;font-weight:900;flex-shrink:0;
                           {% if step.is_decisive %}background:#22c55e;color:#fff;
                           {% else %}background:#e5e7eb;color:#9ca3af;{% endif %}">
-                      {% if step.is_decisive %}✓{% else %}{{ step.num }}{% endif %}
+                      {% if step.is_decisive %}{% else %}{{ step.num }}{% endif %}
                     </div>
                     <div style="flex:1;">
                       <span style="font-size:13px;font-weight:800;">{{ step.label }}</span>
@@ -727,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                       border:1px solid {% if selected_size == size_key and selected_nkt == group.nkt %}#3b82f6{% else %}var(--line){% endif %};
                                       background:{% if selected_size == size_key and selected_nkt == group.nkt %}#eff6ff{% else %}var(--bg){% endif %};
                                       color:{% if selected_size == size_key and selected_nkt == group.nkt %}#1d4ed8{% else %}var(--text){% endif %};">
-                                    {% if selected_size == size_key and selected_nkt == group.nkt %}✓ {% endif %}
+                                    {% if selected_size == size_key and selected_nkt == group.nkt %} {% endif %}
                                     {{ size_key }}
                                     <span style="font-size:10px;font-weight:400;color:var(--muted);display:block;">
                                       НКТ {{ group.nkt }}
@@ -760,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                       border:1px solid {% if selected_size == size_key and selected_nkt == group.nkt %}#3b82f6{% else %}var(--line){% endif %};
                                       background:{% if selected_size == size_key and selected_nkt == group.nkt %}#eff6ff{% else %}var(--bg){% endif %};
                                       color:{% if selected_size == size_key and selected_nkt == group.nkt %}#1d4ed8{% else %}var(--text){% endif %};">
-                                    {% if selected_size == size_key and selected_nkt == group.nkt %}✓ {% endif %}
+                                    {% if selected_size == size_key and selected_nkt == group.nkt %} {% endif %}
                                     {{ size_key }}
                                     <span style="font-size:10px;font-weight:400;color:var(--muted);display:block;">
                                       НКТ {{ group.nkt }}
@@ -849,7 +847,7 @@ function renderMods(mods) {
       <div style="flex:1;">
         <span style="font-size:13px;font-weight:800;
           color:${isSelected ? '#166534' : 'var(--text)'};">
-          ${isSelected ? '✓ ' : ''}${mod.label}
+          ${isSelected ? ' ' : ''}${mod.label}
         </span>
         <span style="font-size:12px;color:var(--muted);margin-left:8px;">${mod.desc}</span>
       </div>
@@ -1042,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {% elif f.is_optimal %}border:1px solid #bfdbfe;background:#eff6ff;
                     {% else %}border:1px solid var(--line);background:#fff;{% endif %}">
                   <div style="font-size:13px;font-weight:900;{% if f.is_recommended %}color:#166534;{% endif %}">
-                    Fit-{{ f.fit }}{% if f.is_recommended %} ✓{% endif %}
+                    Fit-{{ f.fit }}{% if f.is_recommended %} {% endif %}
                   </div>
                   <div style="font-size:11px;color:var(--muted);margin-top:4px;">{{ f.nominal }} мм</div>
                   <div style="font-size:10px;color:var(--muted);">{{ f.range_min }}–{{ f.range_max }}</div>
@@ -1124,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           {% if custom_load_N %}
             <div style="font-size:10px;color:#1d4ed8;font-weight:700;">
-              ✓ задано: {{ custom_load_N|floatformat:0 }} Н
+               задано: {{ custom_load_N|floatformat:0 }} Н
             </div>
           {% endif %}
         </div>
