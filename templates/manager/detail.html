@@ -880,8 +880,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Подсвечиваем активную кнопку размера
   document.querySelectorAll('.size-select-btn').forEach(btn => {
-    if (btn.dataset.size === SELECTED_SIZE &&
-        btn.dataset.nkt  === SELECTED_NKT  &&
+    // Сначала сбрасываем все кнопки
+    btn.style.border     = '1px solid var(--line)';
+    btn.style.background = 'var(--bg)';
+    btn.style.color      = 'var(--text)';
+
+    // Подсвечиваем только если совпадает И размер, И НКТ, И тип (RH/TH)
+    if (btn.dataset.size      === SELECTED_SIZE &&
+        btn.dataset.nkt       === SELECTED_NKT  &&
         btn.dataset.groupType === selectedType) {
       btn.style.border     = '1px solid #3b82f6';
       btn.style.background = '#eff6ff';
