@@ -14,6 +14,11 @@ class QuestionAdmin(admin.ModelAdmin):
 class QuestionnaireAdmin(admin.ModelAdmin):
     list_display = ("title", "slug", "is_active")
 
+@admin.register(Submission)
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "questionnaire", "status", "created_at", "submitted_at")
+    list_filter = ("status", "questionnaire")
+    search_fields = ("user__username",)
+
 admin.site.register(QuestionnaireStep)
-admin.site.register(Submission)
 admin.site.register(Answer)

@@ -1,0 +1,37 @@
+@font-face {
+    font-family: 'Circe';
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    src: local('Circe-Regular'), local('Circe Regular'),
+        url('./Circe-Regular.woff2') format('woff2'), url('./Circe-Regular.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'CirceGlyphs';
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    src: local('Circe-RegularGlyphs'), local('Circe RegularGlyphs'),
+        url('./Circe-RegularGlyphs.woff2') format('woff2'),
+        url('./Circe-RegularGlyphs.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Circe';
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+    src: local('Circe-Bold'), local('Circe Bold'), url('./Circe-Bold.woff2') format('woff2'),
+        url('./Circe-Bold.woff') format('woff');
+}
+
+:root {
+  --brand-red: #EB564F;
+  --brand-gray: #5B6770;
+  --font-body: 'Circe', sans-serif; /* Вот это обращение к шрифту */
+}
+
+body {
+  font-family: var(--font-body);
+}

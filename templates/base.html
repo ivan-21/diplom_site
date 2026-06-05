@@ -24,7 +24,7 @@
           <a class="link {% if '/handbook/' in request.path %}primary{% endif %}" href="/q/handbook/">Справочник</a>
           {% if user.is_staff %}
             <a class="link {% if '/manager/' in request.path and 'schema' not in request.path %}primary{% endif %}" href="/q/manager/submissions/">Менеджер</a>
-            <a class="link {% if '/schema/' in request.path %}primary{% endif %}" href="/q/manager/schema/">Схема БД</a>
+
           {% endif %}
         </nav>
 
