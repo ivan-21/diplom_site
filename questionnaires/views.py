@@ -231,7 +231,7 @@ def build_step_form(step: QuestionnaireStep, draft_answers: dict):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# VIEWS — КЛИЕНТСКАЯ ЧАСТЬ
+# КЛИЕНТСКАЯ ЧАСТЬ
 # ══════════════════════════════════════════════════════════════════════════════
 
 @login_required
@@ -335,7 +335,7 @@ def submit_questionnaire(request, slug):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# VIEWS — МЕНЕДЖЕРСКАЯ ЧАСТЬ
+# МЕНЕДЖЕРСКАЯ ЧАСТЬ
 # ══════════════════════════════════════════════════════════════════════════════
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -359,9 +359,124 @@ def manager_set_status(request, submission_id):
         sub = get_object_or_404(Submission, id=submission_id)
         new_status = request.POST.get("status")
         allowed = [Submission.IN_REVIEW, Submission.PROCESSED, Submission.REJECTED]
+        
         if new_status in allowed:
             sub.status = new_status
+            
+            # При подтверждении — сохраняем полный снимок конфигурации
+            if new_status == Submission.PROCESSED:
+                from .services import (
+                    get_flow_recommendation,
+                    get_cylinder_recommendation,
+                    get_fit_recommendation,
+                    get_material_recommendation,
+                    get_drive_recommendation,
+                )
+                from datetime import datetime
+
+                # Собираем ответы клиента
+                answers = sub.answers.select_related("question").all()
+                answers_dict = {}
+                for a in answers:
+                    if a.value_number is not None:
+                        answers_dict[a.question.slug] = str(a.value_number)
+                    elif a.value_bool is not None:
+                        answers_dict[a.question.slug] = a.value_bool
+                    else:
+                        answers_dict[a.question.slug] = a.value_text
+
+                data = sub.processed_data_json or {}
+
+                # Параметры менеджера
+                custom_spm   = data.get("custom_spm")
+                custom_eta   = data.get("custom_eta")
+                custom_load_N = data.get("custom_load_N")
+                selected_pump_full = data.get("selected_pump_full", "")
+                selected_size = data.get("selected_pump_size", "")
+
+                # Пересчитываем все рекомендации
+                calc_dict = dict(answers_dict)
+                if selected_pump_full:
+                    calc_dict["pump_type_full"] = selected_pump_full
+                if selected_size:
+                    calc_dict["inner_diameter"] = (
+                        selected_size.split("-")[-1] if "-" in selected_size else selected_size
+                    )
+
+                flow_rec     = get_flow_recommendation(answers_dict, custom_spm=custom_spm, custom_eta=custom_eta)
+                cylinder_rec = get_cylinder_recommendation(calc_dict, flow_rec=flow_rec)
+                fit_rec      = get_fit_recommendation(calc_dict)
+                material_rec = get_material_recommendation(answers_dict)
+                drive_dict   = dict(answers_dict)
+                if custom_load_N:
+                    drive_dict["_custom_load_N"] = custom_load_N
+                drive_rec = get_drive_recommendation(drive_dict, flow_rec=flow_rec)
+
+                # Собираем результат
+                result = {
+                    "timestamp": datetime.now().isoformat(),
+
+                    "flow": {
+                        "V_required":  flow_rec.get("V_required"),
+                        "opt_stroke":  flow_rec.get("opt_stroke"),
+                        "opt_spm":     flow_rec.get("opt_spm"),
+                        "eta":         flow_rec.get("eta"),
+                        "best_flow":   flow_rec.get("best", {}).get("flow") if flow_rec.get("best") else None,
+                        "best_size":   flow_rec.get("best", {}).get("pump", {}).get("size") if flow_rec.get("best") else None,
+                    } if flow_rec.get("has_data") and not flow_rec.get("overflow") else None,
+
+                    "cylinder": {
+                        "pump_type":   cylinder_rec.get("pump_type"),
+                        "K":           cylinder_rec.get("K"),
+                        "P":           cylinder_rec.get("P"),
+                        "stroke_mm":   cylinder_rec.get("stroke_mm"),
+                        "cylinder_ft": cylinder_rec["results"][0]["V"] if cylinder_rec.get("results") else None,
+                        "ext1":        cylinder_rec["results"][0]["u1"] if cylinder_rec.get("results") else None,
+                        "ext2":        cylinder_rec["results"][0]["u2"] if cylinder_rec.get("results") else None,
+                        "designation": cylinder_rec["results"][0]["designation"] if cylinder_rec.get("results") else None,
+                    } if cylinder_rec.get("has_data") else None,
+
+                    "fit": {
+                        "size_key":        fit_rec.get("size_key"),
+                        "base_fit":        fit_rec.get("base_fit"),
+                        "recommended_fit": fit_rec.get("recommended_fit"),
+                        "nominal_mm":      fit_rec.get("nominal_mm"),
+                    } if fit_rec.get("has_data") else None,
+
+                    "material": {
+                        "cyl": material_rec["summary"]["cyl"][0]["material"] if material_rec.get("summary") and material_rec["summary"].get("cyl") else None,
+                        "plu": material_rec["summary"]["plu"][0]["material"] if material_rec.get("summary") and material_rec["summary"].get("plu") else None,
+                        "val": material_rec["summary"]["val"][0]["material"] if material_rec.get("summary") and material_rec["summary"].get("val") else None,
+                    } if material_rec.get("has_data") else None,
+
+                    "drive": {
+                        "name":         drive_rec["best_drive"]["name"] if drive_rec.get("best_drive") else None,
+                        "load_N":       drive_rec["best_drive"]["load_N"] if drive_rec.get("best_drive") else None,
+                        "max_stroke_m": drive_rec["best_drive"]["max_stroke_m"] if drive_rec.get("best_drive") else None,
+                        "api_equiv":    drive_rec["best_drive"]["api_equiv"] if drive_rec.get("best_drive") else None,
+                    } if drive_rec.get("has_data") and not drive_rec.get("load_not_set") and not drive_rec.get("no_match") else None,
+
+                    "input": {
+                        "depth":          answers_dict.get("glubina_pogruzhenia"),
+                        "volume":         answers_dict.get("V_otkach_zhidkosti"),
+                        "gas":            answers_dict.get("gas_factor"),
+                        "sand":           answers_dict.get("sand_content"),
+                        "corr_h2s":       answers_dict.get("corr_h2s"),
+                        "corr_co2":       answers_dict.get("corr_co2"),
+                        "corr_saltwater": answers_dict.get("corr_saltwater"),
+                        "corr_oxygen":    answers_dict.get("corr_oxygen"),
+                        "viscosity":      answers_dict.get("viscosity"),
+                        "nkt_diameter":   answers_dict.get("nkt_diameter"),
+                        "well_type":      answers_dict.get("type_skvazhina"),
+                        "oil_level":      answers_dict.get("oil_level"),
+                    },
+                }
+
+                data["result"] = result
+                sub.processed_data_json = data
+
             sub.save()
+
     return redirect("manager_detail", submission_id=submission_id)
 
 
